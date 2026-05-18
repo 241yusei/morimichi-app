@@ -1,7 +1,7 @@
 /* 森、道、市場 2026 ガイド — Service Worker
    コード（html/css/js）はネットワーク優先＝常に最新を表示。
    画像はキャッシュ優先＝オフラインでも高速表示。 */
-const CACHE = 'mm2026-v21';
+const CACHE = 'mm2026-v22';
 const ASSETS = [
   './',
   './index.html',
@@ -38,9 +38,10 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
 
   if (isCode(url)) {
-    /* ネットワーク優先：オンラインなら常に最新、オフラインはキャッシュ */
+    /* ネットワーク優先：オンラインなら常に最新、オフラインはキャッシュ。
+       HTTPキャッシュを無視して必ず最新を取得する（更新が確実に届くように）。 */
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'reload' }).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
         return res;
