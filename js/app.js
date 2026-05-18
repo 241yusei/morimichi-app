@@ -336,7 +336,8 @@
     const wrap = el('div', 'map-wrap');
     wrap.innerHTML =
       `<div class="map-canvas" id="mapCanvas">
-         <div class="map-inner" id="mapInner"><img src="${MAP.img}" alt="会場マップ" id="mapImg"></div>
+         <div class="map-inner" id="mapInner"><img src="${MAP.img}" alt="会場マップ" id="mapImg">
+           <svg id="areaSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>
          <div id="pinLayer"></div>
          <div class="map-zoom">
            <button id="zIn">＋</button><button id="zOut">－</button>
@@ -431,10 +432,16 @@
     }
     function buildMarkers() {
       layer.innerHTML = '';
-      /* 選択中ショップ：そのエリアの出店一覧ブロックを色付き矩形でハイライト */
+      const svg = $('#areaSvg');
+      if (svg) svg.innerHTML = '';
+      /* 選択中ショップ：会場図のエリア輪郭ポリゴン、未定義なら出店一覧ブロックを囲む */
       if (state.highlightShop) {
         const s = SHOPS.find(x => x.id === state.highlightShop);
-        if (s && ZONE_BOX[s.zone]) {
+        const poly = s && ZONE_POLY[s.zone];
+        if (poly && svg) {
+          const pts = poly.map(p => p[0] + ',' + p[1]).join(' ');
+          svg.innerHTML = '<polygon class="area-poly" points="' + pts + '"/>';
+        } else if (s && ZONE_BOX[s.zone]) {
           const zh = el('div', 'zone-hl');
           zh.id = 'zoneHl';
           zh.innerHTML = '<div class="zone-hl__tag">' + esc(s.zoneName) + '</div>';

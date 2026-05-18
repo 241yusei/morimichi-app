@@ -291,6 +291,20 @@ main{
   white-space:nowrap;box-shadow:1px 1px 0 var(--ink);
 }
 
+/* 会場図上のエリア輪郭ポリゴン */
+#areaSvg{
+  position:absolute;inset:0;pointer-events:none;overflow:visible;
+}
+.area-poly{
+  fill:rgba(255,224,0,.3);stroke:var(--red);stroke-width:3;
+  stroke-linejoin:round;vector-effect:non-scaling-stroke;
+  animation:areapoly 1s ease-in-out infinite alternate;
+}
+@keyframes areapoly{
+  from{fill:rgba(255,224,0,.15);}
+  to{fill:rgba(255,224,0,.45);}
+}
+
 /* 選択中ショップのピン：店名を指す固定サイズのピン（どの縮尺でも見える）
    先端の▼が店名の中心を指す */
 .pin--shop{z-index:9;}
