@@ -415,13 +415,13 @@
         p.style.display = (sx < -60 || sx > mv.cw + 60 ||
                            sy < -10 || sy > mv.ch + 60) ? 'none' : '';
       });
-      /* エリアハイライト矩形（マップと一緒に拡縮） */
+      const s = SHOPS.find(x => x.id === state.highlightShop);
+      /* 出店一覧ブロックのハイライト矩形（マップと一緒に拡縮） */
       const zh = $('#zoneHl');
       if (zh) {
-        const s = SHOPS.find(x => x.id === state.highlightShop);
         const box = s && ZONE_BOX[s.zone];
         if (box) {
-          const pad = 0.5;   // 少し外側まで囲む（%）
+          const pad = 0.5;
           zh.style.left = (mv.x + (box.x0 - pad) / 100 * mv.innerW * mv.scale) + 'px';
           zh.style.top  = (mv.y + (box.y0 - pad) / 100 * mv.innerH * mv.scale) + 'px';
           zh.style.width  = ((box.x1 - box.x0 + pad * 2) / 100 * mv.innerW * mv.scale) + 'px';
@@ -431,12 +431,13 @@
     }
     function buildMarkers() {
       layer.innerHTML = '';
-      /* 選択中ショップのエリアを色付き矩形でハイライト（ピンより背面） */
+      /* 選択中ショップ：そのエリアの出店一覧ブロックを色付き矩形でハイライト */
       if (state.highlightShop) {
         const s = SHOPS.find(x => x.id === state.highlightShop);
         if (s && ZONE_BOX[s.zone]) {
           const zh = el('div', 'zone-hl');
           zh.id = 'zoneHl';
+          zh.innerHTML = '<div class="zone-hl__tag">' + esc(s.zoneName) + '</div>';
           layer.appendChild(zh);
         }
       }
@@ -491,13 +492,10 @@
 
     function ready() {
       if (!live()) return;
-      /* 選択対象がなければ全体表示にリセット（前回のズーム状態を持ち越さない） */
-      if (!state.highlightShop && !state.selectedZone) {
-        mv.scale = 1; mv.x = 0; mv.y = 0;
-      }
+      /* ステージ選択時のみ寄る。ショップ検索時は自動ズームせず全体表示のまま */
+      if (!state.selectedZone) { mv.scale = 1; mv.x = 0; mv.y = 0; }
       measure(); buildMarkers(); apply();
-      if (state.highlightShop) focusShop(state.highlightShop);
-      else if (state.selectedZone) focusZone(state.selectedZone, false);
+      if (state.selectedZone) focusZone(state.selectedZone, false);
     }
     /* 画像読み込み＋レイアウト確定を待ってから初期化（寸法0バグ防止）。
        setTimeout を使う＝バックグラウンドタブでも確実に発火（rAFは停止する） */
