@@ -73,7 +73,10 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').then(function (reg) {
       document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) { try { reg.update(); } catch (e) {} }
+        if (!document.hidden) {
+          try { var p = reg.update(); if (p && p.catch) p.catch(function () {}); }
+          catch (e) {}
+        }
       });
     }).catch(function () {});
   });

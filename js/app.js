@@ -421,7 +421,7 @@
        <span><i style="background:var(--teal)"></i>入口</span>
        <span><i style="background:#fff;border-color:var(--red)"></i>現在地</span>`));
     root.appendChild(el('div', 'map-hint',
-      '出店名で検索、または出店ページの「マップで見る」から、会場マップ上で「出店一覧の店名」と「その店があるエリア名」を赤くマーキングします。ピンチ／ダブルタップで拡大。'));
+      '出店名で検索すると、会場マップ上で「店名」「出店一覧のエリア名」「中央地図上のエリアの場所」の3点をマーキングします。📍ピンがそのエリアの実際の位置です。ピンチ／ダブルタップで拡大。'));
 
     const zp = el('div'); zp.id = 'zonePanel';
     root.appendChild(zp);
@@ -499,8 +499,9 @@
     }
     function buildMarkers() {
       layer.innerHTML = '';
-      /* 選択中ショップ：会場マップ上に赤マーキング
-         (1) 出店一覧の店名を赤枠で囲う  (2) エリア名ラベルを赤く丸囲み */
+      /* 選択中ショップ：会場マップ上に3点マーキング
+         (1) 出店一覧の店名を赤枠  (2) 出店一覧のエリア名見出しを丸囲み
+         (3) 中央地図のエリア名（実際の場所）を丸囲み */
       drawAreaMark(state.highlightShop
         ? SHOPS.find(x => x.id === state.highlightShop) : null);
       /* ピンはステージ・入口のみ（出店エリアのピンは表示しない） */
@@ -529,10 +530,21 @@
         p.dataset.zx = state.mePin.x; p.dataset.zy = state.mePin.y;
         layer.appendChild(p);
       }
-      /* 選択中ショップ：店名を指す固定サイズのピン（どの縮尺でも見える） */
+      /* 選択中ショップ：固定サイズのピン（どの縮尺でも見える）。
+         - エリアピン：そのエリアが会場マップ上のどこにあるかを指す
+         - 店名ピン：出店一覧上の店名を指す */
       if (state.highlightShop) {
         const s = SHOPS.find(x => x.id === state.highlightShop);
         if (s) {
+          const venue = ZONE_VENUE[s.zone];
+          if (venue) {
+            const ap = el('div', 'pin pin--area-loc',
+              `<div class="area-pin__body">📍 ${esc(shortName(s.zoneName))}</div>
+               <div class="area-pin__tip"></div>`);
+            ap.dataset.zx = venue[0] + venue[2] / 2;
+            ap.dataset.zy = venue[1] + venue[3] / 2;
+            layer.appendChild(ap);
+          }
           const sp = el('div', 'pin pin--shop',
             `<div class="shop-pin__body">${s.catIcon} ${
                s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>
@@ -663,23 +675,27 @@
             .replace('MORI MICHI ', '').replace(' by Purveyors', '').trim();
   }
 
-  /* 選択中ショップを会場マップ上に赤マーキング。
+  /* 選択中ショップを会場マップ上に3点マーキング。
      SVG (#areaSvg) は #mapInner 内にあり、マップと一緒に拡縮される。
      viewBox 0-100 ＝ マップの正規化座標(%)。 */
+  function ellipseSVG(box, cls, padX, padY) {
+    const cx = box[0] + box[2] / 2, cy = box[1] + box[3] / 2;
+    const rx = box[2] / 2 + padX, ry = box[3] / 2 + padY;
+    return '<ellipse class="' + cls + '" cx="' + cx.toFixed(2) +
+      '" cy="' + cy.toFixed(2) + '" rx="' + rx.toFixed(2) +
+      '" ry="' + ry.toFixed(2) + '"/>';
+  }
   function drawAreaMark(s) {
     const svg = document.getElementById('areaSvg');
     if (!svg) return;
     if (!s) { svg.innerHTML = ''; return; }
     let html = '';
-    /* (2) 実際の場所：会場マップ上のエリア名ラベルを赤く丸囲み */
-    const lb = ZONE_LABEL[s.zone];
-    if (lb) {
-      const cx = lb[0] + lb[2] / 2, cy = lb[1] + lb[3] / 2;
-      const rx = lb[2] / 2 + 2.4, ry = lb[3] / 2 + 2.0;
-      html += '<ellipse class="area-circle" cx="' + cx.toFixed(2) +
-        '" cy="' + cy.toFixed(2) + '" rx="' + rx.toFixed(2) +
-        '" ry="' + ry.toFixed(2) + '"/>';
-    }
+    /* (3) そのエリアが会場マップ上のどこにあるか：中央地図のエリア名を丸囲み */
+    const venue = ZONE_VENUE[s.zone];
+    if (venue) html += ellipseSVG(venue, 'area-circle area-circle--venue', 2.6, 2.1);
+    /* (2) その店名が記載されているエリア名：出店一覧の見出しを丸囲み */
+    const head = ZONE_LABEL_LIST[s.zone];
+    if (head) html += ellipseSVG(head, 'area-circle area-circle--list', 1.4, 1.6);
     /* (1) 店名が記載されている部分：出店一覧の店名を赤枠で囲う */
     const pad = 0.4;
     html += '<rect class="area-namebox" x="' + (s.mx - pad).toFixed(2) +
@@ -981,7 +997,7 @@
       });
     root.appendChild(chips);
     root.appendChild(el('div', 'notice',
-      'ℹ️ 出店をタップ →「マップで見る」で、会場マップ上の店名とエリア名を赤くマーキングします。' +
+      'ℹ️ 出店をタップ →「マップで見る」で、店名・出店一覧のエリア名・中央地図上のエリアの場所をマーキングします。' +
       '公式では1000店舗以上が出店。全店舗は <a href="' + FESTIVAL.links.market +
       '" target="_blank" rel="noopener">公式サイト</a> へ。'));
     const w = el('div'); w.id = 'shopListWrap';
@@ -1185,7 +1201,7 @@
          <div class="k">会場マップ ブース番号</div>
          <div class="v">${esc(shortName(s.zoneName))} ${s.booth}番</div></div></div>` : ''}
        <p style="font-size:10.5px;color:var(--sub);margin:2px 4px 10px">
-         「マップで見る」で、会場マップ上の出店一覧の店名（赤枠）と、その店があるエリア名（赤丸）をマーキングします。${
+         「マップで見る」で、①出店一覧の店名（赤枠）②出店一覧のエリア名（赤丸）③そのエリアが会場マップ上のどこにあるか（📍ピン＋赤丸）の3点を表示します。${
          s.booth ? '会場では出店一覧の番号「' + s.booth + '」と同じ番号のブースが目印です。' :
          '会場内の詳しい位置は会場マップでご確認ください。'}</p>
        <div class="modal__btns">

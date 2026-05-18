@@ -278,12 +278,13 @@ main{
   position:absolute;top:0;left:0;width:100%;height:100%;
   pointer-events:none;overflow:visible;z-index:3;
 }
-/* (2) 実際の場所：エリア名ラベルを赤く丸囲み */
+/* エリア名を丸囲み（出店一覧の見出し＝赤／中央地図上の位置＝赤）*/
 .area-circle{
-  fill:rgba(222,24,21,.12);stroke:var(--red);stroke-width:3.4;
+  fill:rgba(222,24,21,.1);stroke:var(--red);stroke-width:3.4;
   vector-effect:non-scaling-stroke;
   animation:areamark 1s ease-in-out infinite alternate;
 }
+.area-circle--venue{stroke-width:4;fill:rgba(222,24,21,.16);}
 /* (1) 店名が記載されている部分：出店一覧の店名を赤枠で囲う */
 .area-namebox{
   fill:rgba(255,224,0,.34);stroke:var(--red);stroke-width:2.6;
@@ -313,6 +314,18 @@ main{
 @keyframes shopglow{
   0%,100%{box-shadow:2px 2px 0 var(--ink),0 0 0 3px rgba(255,224,0,.95);}
   50%{box-shadow:2px 2px 0 var(--ink),0 0 0 10px rgba(255,224,0,.2);}
+}
+/* 選択中ショップのエリア位置ピン：そのエリアが会場マップ上のどこにあるかを示す */
+.pin--area-loc{z-index:8;}
+.pin--area-loc .area-pin__body{
+  background:var(--teal);color:#fff;font-size:10.5px;font-weight:800;
+  border:2.5px solid var(--ink);border-radius:8px;padding:4px 9px;
+  white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:2px 2px 0 var(--ink);
+}
+.pin--area-loc .area-pin__tip{
+  width:0;height:0;border:8px solid transparent;
+  border-top-color:var(--ink);margin-top:-2px;
 }
 .map-zoom{
   position:absolute;right:9px;bottom:9px;display:flex;flex-direction:column;gap:6px;
