@@ -21,6 +21,14 @@
     night: localStorage.getItem('mm2026_night') === '1'
   };
 
+  /* ---------- エリア編集モード（#editareas のときのみ有効）---------- */
+  const edit = {
+    on: false,          // 編集モード有効か
+    zoneId: null,       // 編集対象エリアID
+    pts: []             // 現在編集中のポリゴン頂点 [[x%,y%],...]
+  };
+  function editModeActive() { return location.hash === '#editareas'; }
+
   function load(k, def) {
     try { const r = JSON.parse(localStorage.getItem(k)); return r == null ? def : r; }
     catch (e) { return def; }
@@ -282,6 +290,9 @@
     const root = $('#view-map');
     root.innerHTML = '';
 
+    /* エリア編集モード：#editareas のときだけ編集パネルを表示 */
+    if (editModeActive()) renderEditPanel(root);
+
     /* ショップ検索（マップ表示用） */
     const search = el('div', 'map-search');
     search.innerHTML =
@@ -487,6 +498,8 @@
           layer.appendChild(sp);
         }
       }
+      /* 編集モードなら描きかけポリゴンを再描画（直前に SVG をクリアしているため） */
+      if (editModeActive()) drawEditPoly();
       placeMarkers();
     }
     function highlightPins() {
@@ -581,6 +594,13 @@
       if (moved) { moved = false; return; }
       const r = canvas.getBoundingClientRect();
       const cx = e.clientX - r.left, cy = e.clientY - r.top;
+      /* エリア編集モード：タップした地図位置に輪郭の頂点を追加 */
+      if (editModeActive()) {
+        const zx = (cx - mv.x) / mv.scale / mv.innerW * 100;
+        const zy = (cy - mv.y) / mv.scale / mv.innerH * 100;
+        editAddVertex(zx, zy);
+        return;
+      }
       if (state.placingMe) {
         const zx = (cx - mv.x) / mv.scale / mv.innerW * 100;
         const zy = (cy - mv.y) / mv.scale / mv.innerH * 100;
@@ -682,6 +702,136 @@
       card.appendChild(el('div', 'now-empty',
         'このエリアの出店は会場マップ・公式サイトでご確認ください。'));
     }
+  }
+
+  /* ============================================================
+     エリア編集モード（#editareas）
+     会場マップをタップしてエリア輪郭ポリゴンを描き、localStorage に保存。
+     既存のパン・ズーム・ピン・エリア表示ロジックは一切変更しない（追加のみ）。
+  ============================================================ */
+  const EDIT_KEY = 'mm2026_zonepoly';
+
+  /* localStorage に保存済みのポリゴン群を読む */
+  function loadSavedPolys() { return load(EDIT_KEY, {}); }
+
+  /* 起動時：保存済みポリゴンを ZONE_POLY にマージ（通常表示で輪郭が出る） */
+  function mergeSavedPolys() {
+    const saved = loadSavedPolys();
+    Object.keys(saved).forEach(id => {
+      if (Array.isArray(saved[id]) && saved[id].length) ZONE_POLY[id] = saved[id];
+    });
+  }
+
+  /* 編集パネル UI（マップ画面上部） */
+  function renderEditPanel(root) {
+    const box = el('div', 'area-edit');
+    box.innerHTML =
+      `<div class="area-edit__title">
+         <span class="tag">EDIT</span>エリア輪郭エディタ</div>
+       <select id="aeSelect">
+         <option value="">— エリアを選択 —</option>
+         ${ZONES.map(z =>
+           `<option value="${z.id}"${z.id === edit.zoneId ? ' selected' : ''}>${
+             esc(z.id)} ／ ${esc(z.name)}</option>`).join('')}
+       </select>
+       <div class="area-edit__btns">
+         <button id="aeUndo">↩ 1点取消</button>
+         <button id="aeClear">✕ クリア</button>
+         <button id="aeSave" class="primary">💾 保存</button>
+         <button id="aeCode" class="accent">{ } コード出力</button>
+       </div>
+       <div class="area-edit__count" id="aeCount"></div>
+       <div class="area-edit__hint">
+         マップをタップして輪郭の頂点を順に打ちます。ドラッグはパン操作です。
+         拡大すると細かく描けます。</div>
+       <div id="aeCodeWrap"></div>`;
+    root.appendChild(box);
+
+    const sel = box.querySelector('#aeSelect');
+    sel.onchange = () => {
+      edit.zoneId = sel.value || null;
+      /* 選択したエリアの既存ポリゴン（保存済み or ZONE_POLY）を編集対象に読み込む */
+      const saved = loadSavedPolys();
+      const existing = (edit.zoneId &&
+        (saved[edit.zoneId] || ZONE_POLY[edit.zoneId])) || [];
+      edit.pts = existing.map(p => [p[0], p[1]]);
+      drawEditPoly();
+      updateEditCount();
+    };
+    box.querySelector('#aeUndo').onclick = () => {
+      edit.pts.pop(); drawEditPoly(); updateEditCount();
+    };
+    box.querySelector('#aeClear').onclick = () => {
+      edit.pts = []; drawEditPoly(); updateEditCount();
+    };
+    box.querySelector('#aeSave').onclick = saveEditPoly;
+    box.querySelector('#aeCode').onclick = outputEditCode;
+    updateEditCount();
+  }
+
+  function updateEditCount() {
+    const c = $('#aeCount');
+    if (!c) return;
+    if (!edit.zoneId) { c.textContent = 'エリア未選択'; return; }
+    c.textContent = '頂点数：' + edit.pts.length +
+      '（3点以上で保存可）';
+  }
+
+  /* #areaSvg に編集中ポリゴンをライブ描画（polyline ＋ 頂点の丸） */
+  function drawEditPoly() {
+    const svg = $('#areaSvg');
+    if (!svg || !editModeActive()) return;
+    if (!edit.pts.length) { svg.innerHTML = ''; return; }
+    const pts = edit.pts.map(p => p[0] + ',' + p[1]).join(' ');
+    let h = '<polyline class="edit-poly-line" points="' + pts +
+      (edit.pts.length > 2 ? ' ' + edit.pts[0][0] + ',' + edit.pts[0][1] : '') +
+      '"/>';
+    edit.pts.forEach((p, i) => {
+      h += '<circle class="edit-poly-vertex' + (i === 0 ? ' first' : '') +
+        '" cx="' + p[0] + '" cy="' + p[1] + '" r="1.1"/>';
+    });
+    svg.innerHTML = h;
+  }
+
+  /* マップタップ時に呼ばれる：地図正規化%座標へ変換して頂点追加 */
+  function editAddVertex(zx, zy) {
+    if (!edit.zoneId) { toast('先にエリアを選択してください'); return; }
+    edit.pts.push([
+      Math.round(Math.max(0, Math.min(100, zx)) * 10) / 10,
+      Math.round(Math.max(0, Math.min(100, zy)) * 10) / 10
+    ]);
+    drawEditPoly();
+    updateEditCount();
+  }
+
+  function saveEditPoly() {
+    if (!edit.zoneId) { toast('エリアを選択してください'); return; }
+    if (edit.pts.length < 3) { toast('頂点を3点以上打ってください'); return; }
+    const saved = loadSavedPolys();
+    saved[edit.zoneId] = edit.pts.map(p => [p[0], p[1]]);
+    save(EDIT_KEY, saved);
+    ZONE_POLY[edit.zoneId] = saved[edit.zoneId];   // 即座に通常表示へ反映
+    toast('「' + (ZONE_BY_ID[edit.zoneId] || {}).name + '」を保存しました');
+  }
+
+  /* 保存済み全ポリゴンを JS コード文字列として textarea に出力 */
+  function outputEditCode() {
+    const saved = loadSavedPolys();
+    const ids = Object.keys(saved);
+    let code = 'const ZONE_POLY = {\n';
+    ids.forEach(id => {
+      const pts = saved[id].map(p => '[' + p[0] + ',' + p[1] + ']').join(', ');
+      code += "  '" + id + "': [" + pts + "],\n";
+    });
+    code += '};';
+    const wrap = $('#aeCodeWrap');
+    if (!wrap) return;
+    wrap.innerHTML =
+      '<textarea class="area-edit__code" readonly>' + esc(code) + '</textarea>';
+    const ta = wrap.querySelector('textarea');
+    ta.focus(); ta.select();
+    toast(ids.length ? ids.length + 'エリア分を出力（コピーしてください）'
+                     : '保存済みエリアがありません');
   }
 
   /* ============================================================
@@ -1062,6 +1212,8 @@
      初期化
   ============================================================ */
   function init() {
+    /* 保存済みエリア輪郭ポリゴンを ZONE_POLY にマージ（通常表示で輪郭が出る） */
+    mergeSavedPolys();
     applyNight();
     renderHeader();
     tickClock();
@@ -1074,6 +1226,10 @@
     $$('.tabbar button').forEach(b => b.onclick = () => switchView(b.dataset.view));
     $('#modalBg').onclick = e => { if (e.target.id === 'modalBg') closeModal(); };
     window.addEventListener('resize', () => mapResizeFn());
+    /* #editareas の付け外しでマップ画面なら編集パネルを出し入れする */
+    window.addEventListener('hashchange', () => {
+      if (state.view === 'map') renderMap();
+    });
     switchView('home');
     updateTabBadge();
   }
