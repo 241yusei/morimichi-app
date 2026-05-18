@@ -413,19 +413,9 @@
         const sx = mv.x + (zx / 100 * mv.innerW) * mv.scale;
         const sy = mv.y + (zy / 100 * mv.innerH) * mv.scale;
         p.style.left = sx + 'px'; p.style.top = sy + 'px';
-        p.style.display = (sx < -50 || sx > mv.cw + 50 ||
-                           sy < -10 || sy > mv.ch + 50) ? 'none' : '';
+        p.style.display = (sx < -60 || sx > mv.cw + 60 ||
+                           sy < -10 || sy > mv.ch + 60) ? 'none' : '';
       });
-      const hl = $('#shopHl');
-      if (hl) {
-        const s = SHOPS.find(x => x.id === state.highlightShop);
-        if (s) {
-          hl.style.left = (mv.x + s.mx / 100 * mv.innerW * mv.scale) + 'px';
-          hl.style.top  = (mv.y + s.my / 100 * mv.innerH * mv.scale) + 'px';
-          hl.style.width  = (s.mw / 100 * mv.innerW * mv.scale) + 'px';
-          hl.style.height = (s.mh / 100 * mv.innerH * mv.scale) + 'px';
-        }
-      }
     }
     function buildMarkers() {
       layer.innerHTML = '';
@@ -455,19 +445,15 @@
         p.dataset.zx = state.mePin.x; p.dataset.zy = state.mePin.y;
         layer.appendChild(p);
       }
-      /* 選択中ショップ：名前を囲む枠＋どの縮尺でも見える固定ピン */
+      /* 選択中ショップ：店名を指す固定サイズのピン（どの縮尺でも見える） */
       if (state.highlightShop) {
         const s = SHOPS.find(x => x.id === state.highlightShop);
         if (s) {
-          const hl = el('div', 'shop-hl');
-          hl.id = 'shopHl';
-          layer.appendChild(hl);
-          /* 固定サイズの店舗ピン（拡大・縮小しても必ず見える） */
           const sp = el('div', 'pin pin--shop',
-            `<div class="pin__dot"><span>${s.catIcon}</span></div>
-             <div class="pin__label">${
-               s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>`);
-          sp.dataset.zx = s.mx + s.mw / 2;
+            `<div class="shop-pin__body">${s.catIcon} ${
+               s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>
+             <div class="shop-pin__tip"></div>`);
+          sp.dataset.zx = s.mx + s.mw / 2;   // 店名の中心を指す
           sp.dataset.zy = s.my + s.mh / 2;
           layer.appendChild(sp);
         }
@@ -492,18 +478,20 @@
       if (state.highlightShop) focusShop(state.highlightShop);
       else if (state.selectedZone) focusZone(state.selectedZone, false);
     }
-    /* 画像読み込み＋レイアウト確定を待ってから初期化（寸法0バグ防止） */
-    let tries = 0;
+    /* 画像読み込み＋レイアウト確定を待ってから初期化（寸法0バグ防止）。
+       setTimeout を使う＝バックグラウンドタブでも確実に発火（rAFは停止する） */
+    let tries = 0, done = false;
     function start() {
-      if (!live()) return;
-      if ((!canvas.clientWidth || !img.complete) && tries++ < 60) {
-        requestAnimationFrame(start); return;
+      if (!live() || done) return;
+      if ((!canvas.clientWidth || !img.complete) && tries++ < 120) {
+        setTimeout(start, 50); return;
       }
+      done = true;
       ready();
     }
-    requestAnimationFrame(start);
-    img.addEventListener('load', () => requestAnimationFrame(start));
-    img.addEventListener('error', () => requestAnimationFrame(start));
+    setTimeout(start, 0);
+    img.addEventListener('load', () => { tries = 0; setTimeout(start, 0); });
+    img.addEventListener('error', () => setTimeout(start, 0));
     /* リサイズ処理は現行セッションのものだけ（window リスナーは init で1個だけ登録） */
     mapResizeFn = () => { if (live()) { measure(); apply(); } };
 
@@ -718,16 +706,18 @@
         canvas.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
       }
     }
-    let tTries = 0;
+    let tTries = 0, tDone = false;
     function start() {
-      if ((!canvas.clientWidth || !img.complete) && tTries++ < 60) {
-        requestAnimationFrame(start); return;
+      if (tDone) return;
+      if ((!canvas.clientWidth || !img.complete) && tTries++ < 120) {
+        setTimeout(start, 50); return;
       }
-      fit(); requestAnimationFrame(() => { measure(); apply(); });
+      tDone = true;
+      fit(); measure(); apply();
     }
-    requestAnimationFrame(start);
-    img.addEventListener('load', () => requestAnimationFrame(start));
-    img.addEventListener('error', () => requestAnimationFrame(start));
+    setTimeout(start, 0);
+    img.addEventListener('load', () => { tTries = 0; tDone = false; setTimeout(start, 0); });
+    img.addEventListener('error', () => setTimeout(start, 0));
     $('#' + inId).onclick = () => zoomAt(v.cw / 2, v.ch / 2, 1.6);
     $('#' + outId).onclick = () => zoomAt(v.cw / 2, v.ch / 2, 1 / 1.6);
     $('#' + resetId).onclick = () => { v.scale = 1; v.x = 0; v.y = 0; apply(); };

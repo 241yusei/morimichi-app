@@ -272,23 +272,24 @@ main{
 .pin.dimmed{opacity:.32;}
 @keyframes pinpop{0%{transform:rotate(45deg) scale(.4);}60%{transform:rotate(45deg) scale(1.2);}100%{transform:rotate(45deg) scale(1);}}
 
-/* 選択中ショップのピン：固定サイズでどの縮尺でも必ず見える */
+/* 選択中ショップのピン：店名を指す固定サイズのピン（どの縮尺でも見える）
+   先端の▼が店名の中心を指す */
 .pin--shop{z-index:9;}
-.pin--shop .pin__dot{
-  width:34px;height:34px;background:var(--red);
-  animation:shoppulse 1.1s ease-in-out infinite;
+.pin--shop .shop-pin__body{
+  background:var(--red);color:#fff;font-size:11px;font-weight:800;
+  border:2.5px solid var(--ink);border-radius:8px;padding:5px 9px;
+  white-space:nowrap;max-width:172px;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:2px 2px 0 var(--ink);
+  animation:shopglow 1.1s ease-in-out infinite;
 }
-.pin--shop .pin__dot span{font-size:15px;}
-.pin--shop .pin__label{
-  margin-top:4px;background:var(--red);color:#fff;font-size:10.5px;max-width:160px;
-  border-color:var(--ink);box-shadow:2px 2px 0 var(--ink);
+.pin--shop .shop-pin__body b{font-family:"Montserrat",sans-serif;}
+.pin--shop .shop-pin__tip{
+  width:0;height:0;border:9px solid transparent;
+  border-top-color:var(--ink);margin-top:-2px;
 }
-.pin--shop .pin__label b{font-family:"Montserrat",sans-serif;}
-@keyframes shoppulse{
-  0%,100%{box-shadow:0 0 0 4px rgba(255,224,0,.9),
-    0 0 0 7px rgba(222,24,21,.5),2px 2px 0 rgba(0,0,0,.4);}
-  50%{box-shadow:0 0 0 7px rgba(255,224,0,.5),
-    0 0 0 16px rgba(222,24,21,.1),2px 2px 0 rgba(0,0,0,.4);}
+@keyframes shopglow{
+  0%,100%{box-shadow:2px 2px 0 var(--ink),0 0 0 3px rgba(255,224,0,.95);}
+  50%{box-shadow:2px 2px 0 var(--ink),0 0 0 10px rgba(255,224,0,.2);}
 }
 .map-zoom{
   position:absolute;right:9px;bottom:9px;display:flex;flex-direction:column;gap:6px;
@@ -490,26 +491,6 @@ main{
   border:2px solid var(--ink);border-radius:50%;font-weight:800;flex-shrink:0;
 }
 
-/* マップ：ショップ名ハイライト枠（中は透明＝店名が読める） */
-.shop-hl{
-  position:absolute;border:3px solid var(--red);border-radius:4px;
-  background:transparent;box-sizing:border-box;pointer-events:none;z-index:6;
-  animation:hlpulse 1s ease-in-out infinite;
-}
-@keyframes hlpulse{
-  0%,100%{box-shadow:0 0 0 2px rgba(255,224,0,.95),0 0 0 4px rgba(222,24,21,.5);}
-  50%{box-shadow:0 0 0 3px rgba(255,224,0,.6),0 0 0 12px rgba(222,24,21,.06);}
-}
-.shop-hl__flag{
-  position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
-  margin-bottom:7px;background:var(--red);color:#fff;font-size:10px;font-weight:800;
-  padding:3px 8px;border-radius:5px;border:2px solid var(--ink);white-space:nowrap;
-  max-width:160px;overflow:hidden;text-overflow:ellipsis;
-}
-.shop-hl__flag::after{
-  content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  border:5px solid transparent;border-top-color:var(--ink);
-}
 
 /* タイムテーブル：拡大表示キャンバス（画像全体が見切れず収まる） */
 .tt-canvas{height:auto;aspect-ratio:1 / 1;background:#cfe3ef;}
