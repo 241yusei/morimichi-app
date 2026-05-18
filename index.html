@@ -55,13 +55,9 @@
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>
 <script>
+/* Service Worker 登録。コードはネットワーク優先のため、次回読み込み時に
+   自動で最新化される（操作中の強制リロードはしない）。 */
 if ('serviceWorker' in navigator) {
-  var swReloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (swReloaded) return;
-    swReloaded = true;
-    location.reload();
-  });
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });

@@ -61,7 +61,7 @@ a{color:var(--red-d);}
   border:2px solid #222;
 }
 .icon-btn{
-  width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--ink);
+  width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid var(--ink);
   display:flex;align-items:center;justify-content:center;font-size:15px;
 }
 .day-tabs{display:flex;gap:6px;padding:2px 12px 9px;}
@@ -258,9 +258,9 @@ main{
 .pin--area .pin__dot{background:var(--yellow);}
 .pin--me .pin__dot{background:#fff;border-color:var(--red);}
 .pin__label{
-  margin-top:2px;font-size:8.5px;font-weight:800;background:var(--card);
-  border:1.5px solid var(--ink);border-radius:4px;padding:0 4px;
-  white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis;
+  margin-top:2px;font-size:9.5px;font-weight:800;background:var(--card);
+  border:1.5px solid var(--ink);border-radius:4px;padding:1px 5px;
+  white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;
 }
 .pin.active{filter:none;z-index:5;}
 .pin.active .pin__dot{
@@ -268,7 +268,7 @@ main{
   box-shadow:0 0 0 6px rgba(222,24,21,.25),1px 1px 0 rgba(0,0,0,.4);
 }
 .pin.active .pin__dot span{font-size:13px;}
-.pin.active .pin__label{background:var(--red);color:#fff;font-size:9.5px;}
+.pin.active .pin__label{background:var(--red);color:#fff;font-size:10px;}
 .pin.dimmed{opacity:.32;}
 @keyframes pinpop{0%{transform:rotate(45deg) scale(.4);}60%{transform:rotate(45deg) scale(1.2);}100%{transform:rotate(45deg) scale(1);}}
 
@@ -295,8 +295,8 @@ main{
   position:absolute;right:9px;bottom:9px;display:flex;flex-direction:column;gap:6px;
 }
 .map-zoom button{
-  width:38px;height:38px;background:var(--card);border:2.5px solid var(--ink);
-  border-radius:9px;font-size:19px;font-weight:800;
+  width:44px;height:44px;background:var(--card);border:2.5px solid var(--ink);
+  border-radius:9px;font-size:21px;font-weight:800;
   display:flex;align-items:center;justify-content:center;box-shadow:var(--hard);
 }
 .map-hint{

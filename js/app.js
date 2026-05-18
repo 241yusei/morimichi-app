@@ -161,7 +161,7 @@
     /* 本日のタイムテーブル */
     root.appendChild(secTitle('タイムテーブル', 'TIMETABLE'));
     const tt = el('div', 'card home-tt');
-    const ttDay = FESTIVAL.days.find(d => d.id === (today || state.day));
+    const ttDay = FESTIVAL.days.find(d => d.id === state.day) || FESTIVAL.days[0];
     tt.innerHTML =
       `<div class="home-tt__row">
          <div><b style="font-size:14px">${ttDay.label} ${ttDay.dow} のタイムテーブル</b>
