@@ -1,7 +1,7 @@
 /* 森、道、市場 2026 ガイド — Service Worker
    コード（html/css/js）はネットワーク優先＝常に最新を表示。
    画像はキャッシュ優先＝オフラインでも高速表示。 */
-const CACHE = 'mm2026-v9';
+const CACHE = 'mm2026-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
   './css/style.css',
   './js/data.js',
   './js/app.js',
-  './img/mm2026_full.png',
+  './img/mm2026_full.webp',
   './img/tt_d1.jpg',
   './img/tt_d2.jpg',
   './img/tt_d3.jpg',

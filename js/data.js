@@ -70,7 +70,7 @@ const INFO = {
 };
 
 /* 会場マップ画像（公式PDFをPNG化） */
-const MAP = { img: 'img/mm2026_full.png' };
+const MAP = { img: 'img/mm2026_full.webp' };
 
 /* 公式タイムテーブル画像（日別） */
 const TIMETABLE = { d1: 'img/tt_d1.jpg', d2: 'img/tt_d2.jpg', d3: 'img/tt_d3.jpg' };
