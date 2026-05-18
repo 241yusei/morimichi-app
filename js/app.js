@@ -445,18 +445,15 @@
       layer.innerHTML = '';
       const svg = $('#areaSvg');
       if (svg) svg.innerHTML = '';
-      /* 選択中ショップ：会場図のエリア輪郭ポリゴン、未定義なら出店一覧ブロックを囲む */
-      if (state.highlightShop) {
+      /* 選択中ショップ：会場マップ上のエリア名ラベルを丸く囲む */
+      if (state.highlightShop && svg) {
         const s = SHOPS.find(x => x.id === state.highlightShop);
-        const poly = s && ZONE_POLY[s.zone];
-        if (poly && svg) {
-          const pts = poly.map(p => p[0] + ',' + p[1]).join(' ');
-          svg.innerHTML = '<polygon class="area-poly" points="' + pts + '"/>';
-        } else if (s && ZONE_BOX[s.zone]) {
-          const zh = el('div', 'zone-hl');
-          zh.id = 'zoneHl';
-          zh.innerHTML = '<div class="zone-hl__tag">' + esc(s.zoneName) + '</div>';
-          layer.appendChild(zh);
+        const lb = s && ZONE_LABEL[s.zone];
+        if (lb) {
+          const cx = lb[0] + lb[2] / 2, cy = lb[1] + lb[3] / 2;
+          const rx = lb[2] / 2 + 3.2, ry = lb[3] / 2 + 2.6;
+          svg.innerHTML = '<ellipse class="area-circle" cx="' + cx +
+            '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '"/>';
         }
       }
       /* ピンはステージ・入口のみ（出店エリアのピンは表示しない） */

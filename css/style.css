@@ -300,9 +300,15 @@ main{
   stroke-linejoin:round;vector-effect:non-scaling-stroke;
   animation:areapoly 1s ease-in-out infinite alternate;
 }
+/* 選択中ショップのエリア名を丸く囲む */
+.area-circle{
+  fill:rgba(255,224,0,.32);stroke:var(--red);stroke-width:3.5;
+  vector-effect:non-scaling-stroke;
+  animation:areapoly 1s ease-in-out infinite alternate;
+}
 @keyframes areapoly{
   from{fill:rgba(255,224,0,.15);}
-  to{fill:rgba(255,224,0,.45);}
+  to{fill:rgba(255,224,0,.5);}
 }
 
 /* 選択中ショップのピン：店名を指す固定サイズのピン（どの縮尺でも見える）
