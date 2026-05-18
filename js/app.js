@@ -18,6 +18,7 @@
     fav: load('mm2026_fav', { artists: [], shops: [] }),
     checks: load('mm2026_checks', {}),
     mePin: load('mm2026_me', null),
+    recent: load('mm2026_recent', { shops: [], artists: [] }),
     night: localStorage.getItem('mm2026_night') === '1'
   };
 
@@ -25,7 +26,26 @@
     try { const r = JSON.parse(localStorage.getItem(k)); return r == null ? def : r; }
     catch (e) { return def; }
   }
-  function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+  /* localStorage は iOS プライベートモード・容量超過で throw する。
+     失敗してもアプリは止めない（メモリ上の状態は保持される）。 */
+  function save(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); }
+    catch (e) { /* 保存不可でも継続 */ }
+  }
+  /* 破損・型崩れした localStorage 値で初期化が落ちるのを防ぐ */
+  function sanitizeState() {
+    const f = state.fav;
+    if (!f || typeof f !== 'object' || !Array.isArray(f.artists) || !Array.isArray(f.shops))
+      state.fav = { artists: [], shops: [] };
+    if (!state.checks || typeof state.checks !== 'object' || Array.isArray(state.checks))
+      state.checks = {};
+    const m = state.mePin;
+    if (!m || typeof m.x !== 'number' || typeof m.y !== 'number' ||
+        isNaN(m.x) || isNaN(m.y)) state.mePin = null;
+    const r = state.recent;
+    if (!r || typeof r !== 'object' || !Array.isArray(r.shops) || !Array.isArray(r.artists))
+      state.recent = { shops: [], artists: [] };
+  }
   function saveFav() { save('mm2026_fav', state.fav); }
   function isFav(t, id) { return state.fav[t].indexOf(id) !== -1; }
   function toggleFav(t, id) {
@@ -33,19 +53,40 @@
     if (i === -1) { a.push(id); return true; }
     a.splice(i, 1); return false;
   }
-  function defaultDay() {
-    const t = new Date();
-    const d = FESTIVAL.days.find(x => sameDate(new Date(x.date), t));
-    return d ? d.id : 'd1';
+  /* 'YYYY-MM-DD' + 'HH:MM' をローカル時刻の Date に（iOS Safari 互換のため
+     文字列パースに頼らず数値引数で生成する） */
+  function mkDate(dateStr, hm) {
+    const p = String(dateStr).split('-').map(Number);
+    const t = String(hm || '00:00').split(':').map(Number);
+    return new Date(p[0], (p[1] || 1) - 1, p[2] || 1, t[0] || 0, t[1] || 0, 0);
   }
   function sameDate(a, b) {
     return a.getFullYear() === b.getFullYear() &&
            a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
+  function defaultDay() {
+    const t = new Date();
+    const d = FESTIVAL.days.find(x => sameDate(mkDate(x.date), t));
+    return d ? d.id : 'd1';
+  }
   function todayDay() {
     const n = new Date();
-    const d = FESTIVAL.days.find(x => sameDate(new Date(x.date), n));
+    const d = FESTIVAL.days.find(x => sameDate(mkDate(x.date), n));
     return d ? d.id : null;
+  }
+  /* 開催状況：'open'（開催時間中）／'before'（次の開場まで）／'ended'（全日程終了） */
+  function festivalStatus() {
+    const now = new Date();
+    const sessions = FESTIVAL.days.map(d => ({
+      day: d, open: mkDate(d.date, d.open), close: mkDate(d.date, d.close)
+    }));
+    for (let i = 0; i < sessions.length; i++) {
+      if (now >= sessions[i].open && now <= sessions[i].close)
+        return { mode: 'open', day: sessions[i].day };
+    }
+    const next = sessions.find(s => s.open > now);
+    if (next) return { mode: 'before', target: next.open, day: next.day };
+    return { mode: 'ended' };
   }
 
   /* ---------- DOM ヘルパ ---------- */
@@ -72,6 +113,33 @@
   function secTitle(jp, en) {
     return el('div', 'section-title',
       `<span>${esc(jp)}</span><span class="en">${esc(en)}</span>`);
+  }
+
+  /* 検索用の正規化キー：大小文字・全角半角・カタカナ/ひらがな・記号差を
+     吸収し、スマホでの曖昧な入力でもヒットしやすくする。 */
+  function normKey(s) {
+    return String(s).toLowerCase()
+      .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+      .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
+      .replace(/[　\s・･.,，、。\-‐-―ー~〜＆]/g, '');
+  }
+  function debounce(fn, ms) {
+    let t;
+    return function () {
+      const args = arguments, ctx = this;
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(ctx, args), ms);
+    };
+  }
+  /* 最近チェックした出店・アーティストを記録（検索を空にした時に提示） */
+  function pushRecent(type, id) {
+    const a = state.recent[type];
+    if (!a) return;
+    const i = a.indexOf(id);
+    if (i !== -1) a.splice(i, 1);
+    a.unshift(id);
+    if (a.length > 12) a.length = 12;
+    save('mm2026_recent', state.recent);
   }
 
   /* ============================================================
@@ -130,16 +198,15 @@
   function renderHome() {
     const root = $('#view-home');
     root.innerHTML = '';
-    const today = todayDay();
 
     /* ヒーロー */
     const hero = el('div', 'hero');
-    const first = new Date(FESTIVAL.days[0].date + 'T11:00:00');
-    const diff = first - new Date();
+    const st = festivalStatus();
     let cd;
-    if (today) {
+    if (st.mode === 'open') {
       cd = `<div class="cd-box wide"><b>本日開催中</b><span>HAVE A GREAT DAY</span></div>`;
-    } else if (diff > 0) {
+    } else if (st.mode === 'before') {
+      const diff = st.target - new Date();
       const dd = Math.floor(diff / 864e5),
             hh = Math.floor(diff % 864e5 / 36e5),
             mm = Math.floor(diff % 36e5 / 6e4);
@@ -286,13 +353,16 @@
     const search = el('div', 'map-search');
     search.innerHTML =
       `<div class="searchbar">
-         <input type="search" id="mapShopInput" placeholder="出店名で検索 → マップ上でハイライト"
+         <input type="search" id="mapShopInput" inputmode="search" enterkeyhint="search"
+           aria-label="出店名で検索してマップ上に表示"
+           placeholder="出店名で検索 → マップ上に表示"
            value="${esc(state.mapShopQuery)}">
        </div>
        <div id="mapShopSug" class="map-sug"></div>`;
     root.appendChild(search);
     const input = $('#mapShopInput');
     input.oninput = e => { state.mapShopQuery = e.target.value; renderMapSug(); };
+    input.onfocus = () => { if (!state.mapShopQuery.trim()) renderMapSug(); };
 
     /* フィルタ（ステージ・入口のみ。出店は出店一覧から検索） */
     const tb = el('div', 'map-toolbar');
@@ -362,15 +432,25 @@
 
   function renderMapSug() {
     const box = $('#mapShopSug'); if (!box) return;
-    const q = state.mapShopQuery.trim().toLowerCase();
-    if (!q) { box.innerHTML = ''; return; }
-    const list = SHOPS.filter(s => s.name.toLowerCase().indexOf(q) !== -1).slice(0, 8);
+    const nq = normKey(state.mapShopQuery);
     box.innerHTML = '';
+    let list, isRecent = false;
+    if (!nq) {
+      /* 未入力時は最近チェックした出店を提示 */
+      list = state.recent.shops
+        .map(id => SHOPS.find(s => s.id === id)).filter(Boolean).slice(0, 6);
+      isRecent = true;
+      if (!list.length) return;
+      box.appendChild(el('div', 'map-sug__head', '最近チェックした出店'));
+    } else {
+      list = SHOPS.filter(s => s.nk.indexOf(nq) !== -1).slice(0, 10);
+    }
     list.forEach(s => {
       const r = el('div', 'map-sug__item',
         `<span>${s.catIcon} ${esc(s.name)}</span>
-         <span style="font-size:10px;color:var(--sub)">${esc(s.zoneName)}</span>`);
+         <span class="map-sug__zone">${esc(shortName(s.zoneName))}</span>`);
       r.onclick = () => {
+        pushRecent('shops', s.id);
         state.highlightShop = s.id;
         state.mapShopQuery = '';
         state.selectedZone = null;
@@ -378,7 +458,7 @@
       };
       box.appendChild(r);
     });
-    if (!list.length)
+    if (!isRecent && !list.length)
       box.innerHTML = '<div class="map-sug__empty">該当する出店がありません</div>';
   }
 
@@ -668,6 +748,7 @@
           `<span class="ico">${s.catIcon}</span>
            <span class="nm">${esc(s.name)}</span><span class="arr">›</span>`);
         row.onclick = () => {
+          pushRecent('shops', s.id);
           state.highlightShop = s.id; state.selectedZone = null;
           renderMap();
         };
@@ -813,10 +894,12 @@
     const root = $('#view-artists');
     root.innerHTML = '';
     const sb = el('div', 'searchbar');
-    sb.innerHTML = `<input type="search" placeholder="アーティスト名で検索"
-      value="${esc(state.artistQuery)}">`;
+    sb.innerHTML = `<input type="search" inputmode="search" enterkeyhint="search"
+      placeholder="アーティスト名で検索（かな・英字どちらでも）"
+      aria-label="アーティスト名で検索" value="${esc(state.artistQuery)}">`;
+    const artistSearch = debounce(renderArtistList, 160);
     sb.querySelector('input').oninput = e => {
-      state.artistQuery = e.target.value; renderArtistList();
+      state.artistQuery = e.target.value; artistSearch();
     };
     root.appendChild(sb);
     root.appendChild(el('div', 'notice',
@@ -827,33 +910,49 @@
     root.appendChild(w);
     renderArtistList();
   }
+  function artistTile(a) {
+    const t = el('div', 'tile',
+      `<div class="tile__cat">🎤</div>
+       <div class="tile__name">${esc(a.name)}</div>
+       <div class="tile__meta">出演アーティスト</div>
+       <button class="tile__fav" aria-label="お気に入り">${
+         isFav('artists', a.id) ? '★' : '☆'}</button>`);
+    t.onclick = () => openArtist(a.id);
+    t.querySelector('.tile__fav').onclick = e => {
+      e.stopPropagation();
+      toast(toggleFav('artists', a.id) ? '★ マイプランに追加' : 'マイプランから削除');
+      saveFav(); renderArtistList(); updateTabBadge();
+    };
+    return t;
+  }
   function renderArtistList() {
     const w = $('#artistListWrap'); if (!w) return;
-    const q = state.artistQuery.trim().toLowerCase();
-    let list = ARTISTS.slice();
-    if (q) list = list.filter(a => a.name.toLowerCase().indexOf(q) !== -1);
-    list.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    const nq = normKey(state.artistQuery);
+    let list = ARTISTS.filter(a => !nq || a.nk.indexOf(nq) !== -1);
     w.innerHTML = '';
-    w.appendChild(el('div', 'list-count', list.length + ' 組'));
+    if (!nq) {
+      const rec = state.recent.artists
+        .map(id => ARTISTS.find(a => a.id === id)).filter(Boolean);
+      if (rec.length) {
+        w.appendChild(el('div', 'list-count', '最近チェックしたアーティスト'));
+        const rg = el('div', 'list-grid');
+        rec.slice(0, 6).forEach(a => rg.appendChild(artistTile(a)));
+        w.appendChild(rg);
+        w.appendChild(el('div', 'list-count', '全出演者 ' + list.length + ' 組'));
+      } else {
+        w.appendChild(el('div', 'list-count', list.length + ' 組'));
+      }
+    } else {
+      w.appendChild(el('div', 'list-count', list.length + ' 組'));
+    }
     if (!list.length) {
-      w.appendChild(el('div', 'empty', '<div class="big">🔍</div>該当なし'));
+      w.appendChild(el('div', 'empty',
+        '<div class="big">🔍</div>「' + esc(state.artistQuery.trim()) +
+        '」に一致する出演者はいません'));
       return;
     }
     const g = el('div', 'list-grid');
-    list.forEach(a => {
-      const t = el('div', 'tile',
-        `<div class="tile__cat">🎤</div>
-         <div class="tile__name">${esc(a.name)}</div>
-         <div class="tile__meta">出演アーティスト</div>
-         <button class="tile__fav">${isFav('artists', a.id) ? '★' : '☆'}</button>`);
-      t.onclick = () => openArtist(a.id);
-      t.querySelector('.tile__fav').onclick = e => {
-        e.stopPropagation();
-        toast(toggleFav('artists', a.id) ? '★ マイプランに追加' : 'マイプランから削除');
-        saveFav(); renderArtistList(); updateTabBadge();
-      };
-      g.appendChild(t);
-    });
+    list.forEach(a => g.appendChild(artistTile(a)));
     w.appendChild(g);
   }
 
@@ -864,10 +963,12 @@
     const root = $('#view-shops');
     root.innerHTML = '';
     const sb = el('div', 'searchbar');
-    sb.innerHTML = `<input type="search" placeholder="出店名で検索"
-      value="${esc(state.shopQuery)}">`;
+    sb.innerHTML = `<input type="search" inputmode="search" enterkeyhint="search"
+      placeholder="出店名で検索（かな・英字どちらでも）"
+      aria-label="出店名で検索" value="${esc(state.shopQuery)}">`;
+    const shopSearch = debounce(renderShopList, 160);
     sb.querySelector('input').oninput = e => {
-      state.shopQuery = e.target.value; renderShopList();
+      state.shopQuery = e.target.value; shopSearch();
     };
     root.appendChild(sb);
     const chips = el('div', 'chips');
@@ -887,33 +988,53 @@
     root.appendChild(w);
     renderShopList();
   }
+  function shopTile(s) {
+    const t = el('div', 'tile',
+      `<div class="tile__cat">${s.catIcon}</div>
+       <div class="tile__name">${esc(s.name)}</div>
+       <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
+       <button class="tile__fav" aria-label="お気に入り">${
+         isFav('shops', s.id) ? '★' : '☆'}</button>`);
+    t.onclick = () => openShop(s.id);
+    t.querySelector('.tile__fav').onclick = e => {
+      e.stopPropagation();
+      toast(toggleFav('shops', s.id) ? '★ マイプランに追加' : 'マイプランから削除');
+      saveFav(); renderShopList(); updateTabBadge();
+    };
+    return t;
+  }
   function renderShopList() {
     const w = $('#shopListWrap'); if (!w) return;
-    const q = state.shopQuery.trim().toLowerCase();
+    const nq = normKey(state.shopQuery);
     let list = SHOPS.slice();
     if (state.shopCat !== 'all') list = list.filter(s => s.cat === state.shopCat);
-    if (q) list = list.filter(s => s.name.toLowerCase().indexOf(q) !== -1);
+    if (nq) list = list.filter(s => s.nk.indexOf(nq) !== -1);
     w.innerHTML = '';
-    w.appendChild(el('div', 'list-count', list.length + ' 店'));
+    /* 検索が空のときは「最近チェックした出店」を上部に提示 */
+    if (!nq) {
+      const rec = state.recent.shops
+        .map(id => SHOPS.find(s => s.id === id))
+        .filter(s => s && (state.shopCat === 'all' || s.cat === state.shopCat));
+      if (rec.length) {
+        w.appendChild(el('div', 'list-count', '最近チェックした出店'));
+        const rg = el('div', 'list-grid');
+        rec.slice(0, 6).forEach(s => rg.appendChild(shopTile(s)));
+        w.appendChild(rg);
+        w.appendChild(el('div', 'list-count', 'すべての出店 ' + list.length + ' 店'));
+      } else {
+        w.appendChild(el('div', 'list-count', list.length + ' 店'));
+      }
+    } else {
+      w.appendChild(el('div', 'list-count', list.length + ' 店'));
+    }
     if (!list.length) {
-      w.appendChild(el('div', 'empty', '<div class="big">🔍</div>該当なし'));
+      w.appendChild(el('div', 'empty',
+        '<div class="big">🔍</div>「' + esc(state.shopQuery.trim()) +
+        '」に一致する出店はありません'));
       return;
     }
     const g = el('div', 'list-grid');
-    list.forEach(s => {
-      const t = el('div', 'tile',
-        `<div class="tile__cat">${s.catIcon}</div>
-         <div class="tile__name">${esc(s.name)}</div>
-         <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
-         <button class="tile__fav">${isFav('shops', s.id) ? '★' : '☆'}</button>`);
-      t.onclick = () => openShop(s.id);
-      t.querySelector('.tile__fav').onclick = e => {
-        e.stopPropagation();
-        toast(toggleFav('shops', s.id) ? '★ マイプランに追加' : 'マイプランから削除');
-        saveFav(); renderShopList(); updateTabBadge();
-      };
-      g.appendChild(t);
-    });
+    list.forEach(s => g.appendChild(shopTile(s)));
     w.appendChild(g);
   }
 
@@ -988,14 +1109,42 @@
   /* ============================================================
      モーダル
   ============================================================ */
+  let modalOpen = false, modalLastFocus = null;
   function openModal(html) {
-    $('#modalBody').innerHTML = html;
-    $('#modalBg').classList.add('open');
+    const body = $('#modalBody'), bg = $('#modalBg');
+    body.innerHTML = html;
+    modalLastFocus = document.activeElement;
+    bg.classList.add('open');
+    /* Android のハードウェア戻る / iOS スワイプバックで閉じられるよう履歴に積む */
+    if (!modalOpen) {
+      modalOpen = true;
+      try { history.pushState({ modal: 1 }, ''); } catch (e) {}
+    }
+    /* フォーカスをモーダル内へ移す（キーボード／スクリーンリーダー対応） */
+    const first = body.querySelector('button, a, input');
+    if (first) setTimeout(() => { try { first.focus(); } catch (e) {} }, 30);
   }
-  function closeModal() { $('#modalBg').classList.remove('open'); }
+  /* fromPop=true は popstate 由来（履歴は既に戻っている）。
+     ユーザー操作（×ボタン等）由来は履歴を1つ戻して整合させる。 */
+  function closeModal(fromPop) {
+    const bg = $('#modalBg');
+    if (!bg.classList.contains('open')) return;
+    bg.classList.remove('open');
+    if (modalOpen && !fromPop) {
+      modalOpen = false;
+      try { history.back(); } catch (e) {}
+    } else {
+      modalOpen = false;
+    }
+    if (modalLastFocus && modalLastFocus.focus) {
+      try { modalLastFocus.focus(); } catch (e) {}
+    }
+    modalLastFocus = null;
+  }
 
   function openArtist(id) {
     const a = ARTISTS.find(x => x.id === id); if (!a) return;
+    pushRecent('artists', a.id);
     const faved = isFav('artists', a.id);
     openModal(
       `<div class="modal__handle"></div>
@@ -1021,6 +1170,7 @@
 
   function openShop(id) {
     const s = SHOPS.find(x => x.id === id); if (!s) return;
+    pushRecent('shops', s.id);
     const faved = isFav('shops', s.id);
     openModal(
       `<div class="modal__handle"></div>
@@ -1063,18 +1213,35 @@
      初期化
   ============================================================ */
   function init() {
+    sanitizeState();
+    /* 検索用キーを事前計算（毎キーストロークの再計算を避ける）。
+       アーティストは50音順にソートしておく。 */
+    SHOPS.forEach(s => { s.nk = normKey(s.name); });
+    ARTISTS.forEach(a => { a.nk = normKey(a.name); });
+    ARTISTS.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+
     applyNight();
     renderHeader();
     tickClock();
     setInterval(tickClock, 10000);
     $('#nightBtn').onclick = () => {
       state.night = !state.night;
-      localStorage.setItem('mm2026_night', state.night ? '1' : '0');
+      try { localStorage.setItem('mm2026_night', state.night ? '1' : '0'); }
+      catch (e) {}
       applyNight();
     };
     $$('.tabbar button').forEach(b => b.onclick = () => switchView(b.dataset.view));
     $('#modalBg').onclick = e => { if (e.target.id === 'modalBg') closeModal(); };
     window.addEventListener('resize', () => mapResizeFn());
+    /* モーダル：Escape で閉じる／端末の戻る操作（popstate）で閉じる */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && $('#modalBg').classList.contains('open')) closeModal();
+    });
+    window.addEventListener('popstate', () => { if (modalOpen) closeModal(true); });
+    /* バックグラウンド復帰時：時計を即更新 */
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) tickClock();
+    });
     switchView('home');
     updateTabBadge();
   }
