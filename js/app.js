@@ -455,15 +455,21 @@
         p.dataset.zx = state.mePin.x; p.dataset.zy = state.mePin.y;
         layer.appendChild(p);
       }
-      /* ショップ名ハイライト枠 */
+      /* 選択中ショップ：名前を囲む枠＋どの縮尺でも見える固定ピン */
       if (state.highlightShop) {
         const s = SHOPS.find(x => x.id === state.highlightShop);
         if (s) {
           const hl = el('div', 'shop-hl');
           hl.id = 'shopHl';
-          hl.innerHTML = `<div class="shop-hl__flag">${
-            s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>`;
           layer.appendChild(hl);
+          /* 固定サイズの店舗ピン（拡大・縮小しても必ず見える） */
+          const sp = el('div', 'pin pin--shop',
+            `<div class="pin__dot"><span>${s.catIcon}</span></div>
+             <div class="pin__label">${
+               s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>`);
+          sp.dataset.zx = s.mx + s.mw / 2;
+          sp.dataset.zy = s.my + s.mh / 2;
+          layer.appendChild(sp);
         }
       }
       placeMarkers();
