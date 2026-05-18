@@ -294,10 +294,10 @@
     const input = $('#mapShopInput');
     input.oninput = e => { state.mapShopQuery = e.target.value; renderMapSug(); };
 
-    /* フィルタ */
+    /* フィルタ（ステージ・入口のみ。出店は出店一覧から検索） */
     const tb = el('div', 'map-toolbar');
     const seg = el('div', 'seg');
-    [['all', 'すべて'], ['stage', 'ステージ'], ['area', 'エリア'], ['gate', '入口']]
+    [['all', 'ステージ・入口'], ['stage', 'ステージ'], ['gate', '入口']]
       .forEach(f => {
         const b = el('button', state.mapFilter === f[0] ? 'active' : '', f[1]);
         b.onclick = () => { state.mapFilter = f[0]; renderMap(); };
@@ -347,11 +347,10 @@
 
     root.appendChild(el('div', 'map-legend',
       `<span><i style="background:var(--red)"></i>ステージ</span>
-       <span><i style="background:var(--yellow)"></i>エリア</span>
        <span><i style="background:var(--teal)"></i>入口</span>
        <span><i style="background:#fff;border-color:var(--red)"></i>現在地</span>`));
     root.appendChild(el('div', 'map-hint',
-      '出店名で検索、または出店ページの「マップで見る」から、店名をマップ上で黄色くハイライトします。ピンチ／ダブルタップで拡大。'));
+      '出店名で検索、または出店ページの「マップで見る」から、店をマップ上にピン表示し、そのエリアを色付きでハイライトします。ピンチ／ダブルタップで拡大。'));
 
     const zp = el('div'); zp.id = 'zonePanel';
     root.appendChild(zp);
@@ -416,14 +415,36 @@
         p.style.display = (sx < -60 || sx > mv.cw + 60 ||
                            sy < -10 || sy > mv.ch + 60) ? 'none' : '';
       });
+      /* エリアハイライト矩形（マップと一緒に拡縮） */
+      const zh = $('#zoneHl');
+      if (zh) {
+        const s = SHOPS.find(x => x.id === state.highlightShop);
+        const box = s && ZONE_BOX[s.zone];
+        if (box) {
+          const pad = 0.5;   // 少し外側まで囲む（%）
+          zh.style.left = (mv.x + (box.x0 - pad) / 100 * mv.innerW * mv.scale) + 'px';
+          zh.style.top  = (mv.y + (box.y0 - pad) / 100 * mv.innerH * mv.scale) + 'px';
+          zh.style.width  = ((box.x1 - box.x0 + pad * 2) / 100 * mv.innerW * mv.scale) + 'px';
+          zh.style.height = ((box.y1 - box.y0 + pad * 2) / 100 * mv.innerH * mv.scale) + 'px';
+        }
+      }
     }
     function buildMarkers() {
       layer.innerHTML = '';
-      const zones = ZONES.filter(z =>
+      /* 選択中ショップのエリアを色付き矩形でハイライト（ピンより背面） */
+      if (state.highlightShop) {
+        const s = SHOPS.find(x => x.id === state.highlightShop);
+        if (s && ZONE_BOX[s.zone]) {
+          const zh = el('div', 'zone-hl');
+          zh.id = 'zoneHl';
+          layer.appendChild(zh);
+        }
+      }
+      /* ピンはステージ・入口のみ（出店エリアのピンは表示しない） */
+      const zones = ZONES.filter(z => z.type !== 'area' && (
         state.mapFilter === 'all' ||
         (state.mapFilter === 'stage' && z.type === 'stage') ||
-        (state.mapFilter === 'gate' && z.type === 'gate') ||
-        (state.mapFilter === 'area' && z.type === 'area'));
+        (state.mapFilter === 'gate' && z.type === 'gate')));
       zones.forEach(z => {
         const icon = z.type === 'stage' ? '🎵' : z.type === 'gate' ? '🚪' : '🛍️';
         const p = el('div', 'pin pin--' + z.type +
@@ -591,12 +612,21 @@
   function focusShop(shopId) {
     const s = SHOPS.find(x => x.id === shopId);
     if (!s || !mv.cw) return;
-    flyTo(s.mx + s.mw / 2, s.my + s.mh / 2, 3.6, true);
+    const box = ZONE_BOX[s.zone];
+    if (box) {
+      /* エリア全体（出店一覧ブロック）が収まるように寄る */
+      const bw = box.x1 - box.x0, bh = box.y1 - box.y0;
+      let scale = Math.min(78 / Math.max(bh, 1), 90 / Math.max(bw, 1));
+      scale = Math.max(1.7, Math.min(4.5, scale));
+      flyTo((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2, scale, true);
+    } else {
+      flyTo(s.mx + s.mw / 2, s.my + s.mh / 2, 3.6, true);
+    }
   }
   function flyTo(px, py, scale, animate) {
     mv.scale = scale;
     mv.x = mv.cw / 2 - px / 100 * mv.innerW * mv.scale;
-    mv.y = mv.ch * 0.44 - py / 100 * mv.innerH * mv.scale;
+    mv.y = mv.ch / 2 - py / 100 * mv.innerH * mv.scale;
     if (animate) {
       const inner = $('#mapInner');
       if (inner) {

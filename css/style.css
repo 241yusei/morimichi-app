@@ -272,6 +272,18 @@ main{
 .pin.dimmed{opacity:.32;}
 @keyframes pinpop{0%{transform:rotate(45deg) scale(.4);}60%{transform:rotate(45deg) scale(1.2);}100%{transform:rotate(45deg) scale(1);}}
 
+/* 選択中ショップのエリアハイライト（出店一覧ブロックを色付きで囲む） */
+.zone-hl{
+  position:absolute;z-index:3;pointer-events:none;box-sizing:border-box;
+  background:rgba(255,224,0,.28);border:3px solid var(--red);border-radius:6px;
+  box-shadow:0 0 0 3px rgba(222,24,21,.25);
+  animation:zonehl .9s ease-in-out infinite alternate;
+}
+@keyframes zonehl{
+  from{background:rgba(255,224,0,.16);}
+  to{background:rgba(255,224,0,.4);}
+}
+
 /* 選択中ショップのピン：店名を指す固定サイズのピン（どの縮尺でも見える）
    先端の▼が店名の中心を指す */
 .pin--shop{z-index:9;}

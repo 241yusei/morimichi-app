@@ -594,3 +594,15 @@ const SHOPS = SHOP_DATA.map((s, i) => {
     mx: x, my: y, mw: w, mh: h         // マップ上の店名ハイライト矩形（%）
   };
 });
+
+/* エリアごとの範囲（出店一覧ブロックの外接矩形）。
+   ショップ選択時、そのエリアをマップ上で色付きハイライトするのに使う。 */
+const ZONE_BOX = {};
+SHOPS.forEach(s => {
+  const b = ZONE_BOX[s.zone] ||
+    (ZONE_BOX[s.zone] = { x0: 100, y0: 100, x1: 0, y1: 0 });
+  b.x0 = Math.min(b.x0, s.mx);
+  b.y0 = Math.min(b.y0, s.my);
+  b.x1 = Math.max(b.x1, s.mx + s.mw);
+  b.y1 = Math.max(b.y1, s.my + s.mh);
+});
