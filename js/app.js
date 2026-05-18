@@ -115,10 +115,14 @@
       `<span>${esc(jp)}</span><span class="en">${esc(en)}</span>`);
   }
 
-  /* 検索用の正規化キー：大小文字・全角半角・カタカナ/ひらがな・記号差を
-     吸収し、スマホでの曖昧な入力でもヒットしやすくする。 */
+  /* 検索用の正規化キー：大小文字・全角半角・半角カナ・カタカナ/ひらがな・
+     記号差を吸収し、スマホでの曖昧な入力でもヒットしやすくする。
+     NFKC で半角カナ→全角カナ・全角英数→半角英数を一括変換する。 */
   function normKey(s) {
-    return String(s).toLowerCase()
+    var t;
+    try { t = String(s).normalize('NFKC'); }
+    catch (e) { t = String(s); }
+    return t.toLowerCase()
       .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
       .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
       .replace(/[　\s・･.,，、。\-‐-―ー~〜＆]/g, '');
