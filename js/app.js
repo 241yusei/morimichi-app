@@ -20,8 +20,19 @@
     checks: load('mm2026_checks', {}),
     mePin: load('mm2026_me', null),
     recent: load('mm2026_recent', { shops: [], artists: [] }),
-    night: localStorage.getItem('mm2026_night') === '1'
+    night: initNight()
   };
+  /* 夜モード初期値：保存値があれば優先、無ければ端末のダークモード設定に従う。
+     localStorage が使えない環境でも落ちないよう try/catch で包む。 */
+  function initNight() {
+    try {
+      const v = localStorage.getItem('mm2026_night');
+      if (v === '1') return true;
+      if (v === '0') return false;
+    } catch (e) {}
+    try { return window.matchMedia('(prefers-color-scheme:dark)').matches; }
+    catch (e) { return false; }
+  }
 
   function load(k, def) {
     try { const r = JSON.parse(localStorage.getItem(k)); return r == null ? def : r; }
@@ -88,6 +99,32 @@
     const next = sessions.find(s => s.open > now);
     if (next) return { mode: 'before', target: next.open, day: next.day };
     return { mode: 'ended' };
+  }
+  /* カウントダウン表示の中身を生成（ホームのヒーロー内で使用） */
+  function countdownInner(st) {
+    if (st.mode === 'open')
+      return '<div class="cd-box wide"><b>本日開催中</b><span>HAVE A GREAT DAY</span></div>';
+    if (st.mode === 'before') {
+      const diff = Math.max(0, st.target - new Date());
+      const dd = Math.floor(diff / 864e5),
+            hh = Math.floor(diff % 864e5 / 36e5),
+            mm = Math.floor(diff % 36e5 / 6e4);
+      return '<div class="cd-box"><b class="en">' + dd + '</b><span>DAYS</span></div>' +
+             '<div class="cd-box"><b class="en">' + hh + '</b><span>HOURS</span></div>' +
+             '<div class="cd-box"><b class="en">' + mm + '</b><span>MIN</span></div>';
+    }
+    return '<div class="cd-box wide"><b>開催ありがとうございました</b>' +
+           '<span>SEE YOU NEXT YEAR</span></div>';
+  }
+  /* ホーム表示中、カウントダウンを定期更新（開いたまま固まるのを防ぐ）。
+     開催状態が変わったらホームを丸ごと再描画する。 */
+  function refreshCountdown() {
+    if (state.view !== 'home') return;
+    const box = document.querySelector('.countdown');
+    if (!box) return;
+    const st = festivalStatus();
+    if (st.mode !== box.dataset.mode) { renderHome(); return; }
+    box.innerHTML = countdownInner(st);
   }
 
   /* ---------- DOM ヘルパ ---------- */
@@ -169,6 +206,9 @@
   function applyNight() {
     document.body.classList.toggle('night', state.night);
     const b = $('#nightBtn'); if (b) b.textContent = state.night ? '☀️' : '🌙';
+    /* ステータスバー色も表示モードに合わせる */
+    const tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.setAttribute('content', state.night ? '#15171c' : '#de1815');
   }
 
   /* ============================================================
@@ -207,27 +247,15 @@
     /* ヒーロー */
     const hero = el('div', 'hero');
     const st = festivalStatus();
-    let cd;
-    if (st.mode === 'open') {
-      cd = `<div class="cd-box wide"><b>本日開催中</b><span>HAVE A GREAT DAY</span></div>`;
-    } else if (st.mode === 'before') {
-      const diff = st.target - new Date();
-      const dd = Math.floor(diff / 864e5),
-            hh = Math.floor(diff % 864e5 / 36e5),
-            mm = Math.floor(diff % 36e5 / 6e4);
-      cd = `<div class="cd-box"><b class="en">${dd}</b><span>DAYS</span></div>
-            <div class="cd-box"><b class="en">${hh}</b><span>HOURS</span></div>
-            <div class="cd-box"><b class="en">${mm}</b><span>MIN</span></div>`;
-    } else {
-      cd = `<div class="cd-box wide"><b>開催ありがとうございました</b>
-            <span>SEE YOU NEXT YEAR</span></div>`;
-    }
+    const d0 = FESTIVAL.days[0], dL = FESTIVAL.days[FESTIVAL.days.length - 1];
+    const period = d0.label.replace('/', '.') + ' ' + d0.dow + ' – ' +
+                   dL.label.replace('/', '.') + ' ' + dL.dow;
     hero.innerHTML =
       `<div class="hero__dots"></div>
        <h2>${esc(FESTIVAL.name)}</h2>
-       <div class="sub">5.22 FRI – 5.24 SUN ／ 蒲郡 ラグーナビーチ</div>
+       <div class="sub">${esc(period)} ／ 蒲郡 ラグーナビーチ</div>
        <div class="venue">${esc(FESTIVAL.venue)}</div>
-       <div class="countdown">${cd}</div>`;
+       <div class="countdown" data-mode="${st.mode}">${countdownInner(st)}</div>`;
     root.appendChild(hero);
 
     /* 非公式であることの明示（出所混同を避けるための注意書き） */
@@ -247,7 +275,8 @@
          <p style="font-size:11px;color:var(--sub)">公式タイムテーブルを見る</p></div>
          <span style="font-size:22px">🕒</span>
        </div>
-       <img src="${TIMETABLE[ttDay.id]}" alt="タイムテーブル" loading="lazy">`;
+       <img src="${TIMETABLE[ttDay.id].src}" alt="タイムテーブル" loading="lazy"
+         width="${TIMETABLE[ttDay.id].w}" height="${TIMETABLE[ttDay.id].h}">`;
     tt.onclick = () => { state.day = ttDay.id; renderHeader(); switchView('timetable'); };
     root.appendChild(tt);
 
@@ -912,10 +941,12 @@
     root.appendChild(el('div', 'map-hint',
       'ピンチ／ダブルタップ／＋－ボタンで拡大できます。'));
 
+    const tt = TIMETABLE[d.id];
     const wrap = el('div', 'map-wrap');
     wrap.innerHTML =
-      `<div class="map-canvas tt-canvas" id="ttCanvas">
-         <div class="map-inner" id="ttInner"><img src="${TIMETABLE[d.id]}" alt="タイムテーブル" id="ttImg"></div>
+      `<div class="map-canvas tt-canvas" id="ttCanvas" style="aspect-ratio:${tt.w} / ${tt.h}">
+         <div class="map-inner" id="ttInner"><img src="${tt.src}" alt="タイムテーブル"
+           id="ttImg" width="${tt.w}" height="${tt.h}"></div>
          <div class="map-zoom">
            <button id="ttIn">＋</button><button id="ttOut">－</button>
            <button id="ttReset" style="font-size:14px">⟳</button>
@@ -1364,6 +1395,7 @@
     renderHeader();
     tickClock();
     setInterval(tickClock, 10000);
+    setInterval(refreshCountdown, 30000);   // ホームのカウントダウンを更新
     $('#nightBtn').onclick = () => {
       state.night = !state.night;
       try { localStorage.setItem('mm2026_night', state.night ? '1' : '0'); }
@@ -1378,9 +1410,9 @@
       if (e.key === 'Escape' && $('#modalBg').classList.contains('open')) closeModal();
     });
     window.addEventListener('popstate', () => { if (modalOpen) closeModal(true); });
-    /* バックグラウンド復帰時：時計を即更新 */
+    /* バックグラウンド復帰時：時計とカウントダウンを即更新 */
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) tickClock();
+      if (!document.hidden) { tickClock(); refreshCountdown(); }
     });
     switchView('home');
     updateTabBadge();

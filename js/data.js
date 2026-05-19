@@ -73,7 +73,13 @@ const INFO = {
 const MAP = { img: 'img/mm2026_full.webp' };
 
 /* 公式タイムテーブル画像（日別） */
-const TIMETABLE = { d1: 'img/tt_d1.jpg', d2: 'img/tt_d2.jpg', d3: 'img/tt_d3.jpg' };
+/* 公式タイムテーブル画像。w/h は実寸（縦横比をレイアウト前に確定し
+   読み込み時のガタつき＝レイアウトシフトを防ぐ）。 */
+const TIMETABLE = {
+  d1: { src: 'img/tt_d1.jpg', w: 1438, h: 1460 },
+  d2: { src: 'img/tt_d2.jpg', w: 1346, h: 1436 },
+  d3: { src: 'img/tt_d3.jpg', w: 1526, h: 1448 }
+};
 
 /* マップ上のエリアピン（ステージ・入口・主要エリア）
    座標は公式マップPDFから抽出した正規化値（%） */
