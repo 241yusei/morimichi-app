@@ -7,7 +7,6 @@
   const state = {
     view: 'home',
     day: defaultDay(),
-    mapFilter: 'all',
     selectedZone: null,
     highlightShop: null,   // マップ上でハイライト中のショップID
     planMode: false,       // マイプランの出店をまとめてマップ表示
@@ -405,18 +404,12 @@
     input.oninput = e => { state.mapShopQuery = e.target.value; renderMapSug(); };
     input.onfocus = () => { if (!state.mapShopQuery.trim()) renderMapSug(); };
 
-    /* フィルタ（ステージ・入口のみ。出店は出店一覧から検索） */
+    /* ツールバー：現在地セットボタン（ステージ・入口のピンは廃止して
+       マップを見やすくした。ステージ名・ゲートは会場マップ画像に印字済み） */
     const tb = el('div', 'map-toolbar');
-    const seg = el('div', 'seg');
-    [['all', 'ステージ・入口'], ['stage', 'ステージ'], ['gate', '入口']]
-      .forEach(f => {
-        const b = el('button', state.mapFilter === f[0] ? 'active' : '', f[1]);
-        b.onclick = () => { state.mapFilter = f[0]; renderMap(); };
-        seg.appendChild(b);
-      });
-    tb.appendChild(seg);
-    const meBtn = el('button', 'icon-btn', state.placingMe ? '📍' : '🧭');
-    meBtn.style.cssText = 'width:42px;height:42px;border-radius:9px;box-shadow:var(--hard);font-size:17px;flex-shrink:0;';
+    const meBtn = el('button', 'me-btn' + (state.placingMe ? ' active' : ''),
+      state.placingMe ? '📍 マップをタップして現在地を指定'
+                      : '🧭 現在地をマップに登録');
     meBtn.onclick = () => {
       state.placingMe = !state.placingMe;
       toast(state.placingMe ? 'マップをタップして現在地をセット' : '現在地モード解除');
@@ -471,13 +464,9 @@
        </div>`;
     root.appendChild(wrap);
 
-    root.appendChild(el('div', 'map-legend',
-      `<span><i style="background:var(--red)"></i>ステージ</span>
-       <span><i style="background:var(--teal)"></i>入口</span>
-       <span><i style="background:#fff;border-color:var(--red)"></i>現在地</span>`));
     root.appendChild(el('div', 'map-hint', state.planMode
       ? 'マイプランに登録した出店を、エリアごとの📍ピンで表示しています。下の一覧で店をタップすると、その店の詳しい位置を確認できます。'
-      : '出店名で検索すると、会場マップ上で「店名」「出店一覧のエリア名」「中央地図上のエリアの場所」の3点をマーキングします。📍ピンがそのエリアの実際の位置です。ピンチ／ダブルタップで拡大。'));
+      : 'ステージ名・入口・トイレなどは会場マップ画像に印字されています。出店名で検索すると、その店の「店名」「出店一覧のエリア名」「会場マップ上のエリアの場所」の3点をマーキングします。ピンチ／ダブルタップで拡大できます。'));
 
     const zp = el('div'); zp.id = 'zonePanel';
     root.appendChild(zp);
@@ -568,28 +557,8 @@
          (3) 中央地図のエリア名（実際の場所）を丸囲み */
       drawAreaMark(state.highlightShop
         ? SHOPS.find(x => x.id === state.highlightShop) : null);
-      /* ピンはステージ・入口のみ（出店エリアのピンは表示しない） */
-      const zones = ZONES.filter(z => z.type !== 'area' && (
-        state.mapFilter === 'all' ||
-        (state.mapFilter === 'stage' && z.type === 'stage') ||
-        (state.mapFilter === 'gate' && z.type === 'gate')));
-      zones.forEach(z => {
-        const icon = z.type === 'stage' ? '🎵' : z.type === 'gate' ? '🚪' : '🛍️';
-        const p = el('div', 'pin pin--' + z.type +
-          (state.selectedZone === z.id ? ' active' : ''),
-          `<div class="pin__dot"><span>${icon}</span></div>
-           <div class="pin__label">${esc(shortName(z.name))}</div>`);
-        p.dataset.zx = z.x; p.dataset.zy = z.y; p.dataset.zone = z.id;
-        p.onclick = e => {
-          e.stopPropagation();
-          const wasPlan = state.planMode;
-          state.selectedZone = z.id; state.highlightShop = null;
-          state.planMode = false;
-          if (wasPlan) { renderMap(); return; }
-          focusZone(z.id, true); renderZonePanel(); highlightPins();
-        };
-        layer.appendChild(p);
-      });
+      /* ステージ・入口のピンは廃止（会場マップ画像に名称が印字済みで、
+         ピンが多いと地図が見づらくなるため）。 */
       if (state.mePin) {
         const p = el('div', 'pin pin--me',
           `<div class="pin__dot"><span>🙋</span></div>
