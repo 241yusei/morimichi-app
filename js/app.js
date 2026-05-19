@@ -396,7 +396,10 @@
     tb.appendChild(meBtn);
     root.appendChild(tb);
 
-    /* マイプラン動線表示中バナー */
+    /* マイプラン動線表示中バナー（行きたい出店が0件なら通常表示に戻す） */
+    if (state.planMode && !SHOPS.some(s => isFav('shops', s.id))) {
+      state.planMode = false;
+    }
     if (state.planMode) {
       const favShops = SHOPS.filter(s => isFav('shops', s.id));
       const sc = el('div', 'map-selected map-selected--plan');
