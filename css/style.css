@@ -238,7 +238,7 @@ main{
   touch-action:none;height:62vh;
 }
 /* 会場マップは全体を一画面に表示（マップ画像の縦横比に合わせる） */
-#mapCanvas{height:auto;aspect-ratio:1600 / 2262;}
+#mapCanvas{height:auto;aspect-ratio:4056 / 5733;}
 .map-inner{position:absolute;top:0;left:0;transform-origin:0 0;}
 .map-inner img{width:100%;display:block;pointer-events:none;}
 .pin{
