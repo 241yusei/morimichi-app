@@ -54,6 +54,10 @@ a{color:var(--red-d);}
   padding:2px 6px;border-radius:3px;border:2px solid var(--ink);
   font-family:"Montserrat",sans-serif;
 }
+.app-header__title .unofficial-tag{
+  background:rgba(255,255,255,.22);color:#fff;font-size:9px;font-weight:800;
+  padding:2px 6px;border-radius:3px;letter-spacing:0;white-space:nowrap;
+}
 .app-header__right{display:flex;align-items:center;gap:8px;}
 .app-header__clock{
   font-family:"Montserrat",sans-serif;font-weight:700;font-size:13px;
@@ -197,6 +201,24 @@ main{
 }
 .notice a{color:var(--ink2);font-weight:800;}
 
+/* 非公式であることの注意書き（ホーム上部） */
+.disclaimer{
+  background:var(--card);border:2px dashed var(--sub);border-radius:10px;
+  padding:9px 12px;font-size:10.5px;font-weight:600;color:var(--sub);
+  margin:0 0 14px;line-height:1.6;
+}
+.disclaimer b{color:var(--red);font-weight:800;}
+.disclaimer a{color:var(--ink);font-weight:800;text-decoration:underline;}
+
+/* マイプラン → マップ動線ボタン */
+.plan-map-btn{
+  display:block;width:100%;margin:2px 0 12px;
+  background:var(--red);color:#fff;border:2.5px solid var(--ink);
+  border-radius:12px;padding:12px;font-size:13px;font-weight:800;
+  box-shadow:var(--hard);cursor:pointer;
+}
+.plan-map-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+
 /* ---------- 検索・フィルタ ---------- */
 .searchbar{position:relative;margin-bottom:10px;}
 .searchbar input{
@@ -271,6 +293,24 @@ main{
 .pin.active .pin__label{background:var(--red);color:#fff;font-size:10px;}
 .pin.dimmed{opacity:.32;}
 @keyframes pinpop{0%{transform:rotate(45deg) scale(.4);}60%{transform:rotate(45deg) scale(1.2);}100%{transform:rotate(45deg) scale(1);}}
+
+/* マイプラン動線ピン：行きたい出店があるエリアを件数付きで表示 */
+.pin--plan{z-index:7;}
+.pin--plan .plan-pin__dot{
+  width:26px;height:26px;border-radius:50% 50% 50% 3px;
+  background:var(--red);border:2.5px solid var(--ink);transform:rotate(45deg);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:1px 1px 0 rgba(0,0,0,.4);
+}
+.pin--plan .plan-pin__dot span{
+  transform:rotate(-45deg);color:#fff;
+  font-family:"Montserrat",sans-serif;font-weight:800;font-size:12px;
+}
+.pin--plan .plan-pin__label{
+  margin-top:3px;font-size:9.5px;font-weight:800;background:var(--red);color:#fff;
+  border:1.5px solid var(--ink);border-radius:4px;padding:1px 6px;
+  white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;
+}
 
 /* 選択中ショップの会場マップ赤マーキング（SVGオーバーレイ）。
    #areaSvg は #mapInner 内にありマップと一緒に拡縮される。 */

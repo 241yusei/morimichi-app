@@ -10,6 +10,7 @@
     mapFilter: 'all',
     selectedZone: null,
     highlightShop: null,   // マップ上でハイライト中のショップID
+    planMode: false,       // マイプランの出店をまとめてマップ表示
     placingMe: false,
     mapShopQuery: '',
     artistQuery: '',
@@ -229,6 +230,13 @@
        <div class="countdown">${cd}</div>`;
     root.appendChild(hero);
 
+    /* 非公式であることの明示（出所混同を避けるための注意書き） */
+    root.appendChild(el('div', 'disclaimer',
+      'このアプリは森、道、市場のファンが個人的に制作した<b>非公式ガイド</b>です。' +
+      '主催・運営とは一切関係ありません。日程・出店・タイムテーブル等の最新かつ正確な情報は、' +
+      '必ず <a href="' + FESTIVAL.official +
+      '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
+
     /* 本日のタイムテーブル */
     root.appendChild(secTitle('タイムテーブル', 'TIMETABLE'));
     const tt = el('div', 'card home-tt');
@@ -388,8 +396,19 @@
     tb.appendChild(meBtn);
     root.appendChild(tb);
 
-    /* 選択中ショップ表示 */
-    if (state.highlightShop) {
+    /* マイプラン動線表示中バナー */
+    if (state.planMode) {
+      const favShops = SHOPS.filter(s => isFav('shops', s.id));
+      const sc = el('div', 'map-selected map-selected--plan');
+      sc.innerHTML =
+        `<span class="ico">🗺️</span>
+         <div class="t"><b>マイプランの出店 ${favShops.length}店を表示中</b>
+         <p>エリアごとのピンで回る順番を考えられます</p></div>
+         <button class="x" aria-label="解除">✕</button>`;
+      sc.querySelector('.x').onclick = () => { state.planMode = false; renderMap(); };
+      root.appendChild(sc);
+    } else if (state.highlightShop) {
+      /* 選択中ショップ表示 */
       const s = SHOPS.find(x => x.id === state.highlightShop);
       if (s) {
         const sc = el('div', 'map-selected');
@@ -424,14 +443,16 @@
       `<span><i style="background:var(--red)"></i>ステージ</span>
        <span><i style="background:var(--teal)"></i>入口</span>
        <span><i style="background:#fff;border-color:var(--red)"></i>現在地</span>`));
-    root.appendChild(el('div', 'map-hint',
-      '出店名で検索すると、会場マップ上で「店名」「出店一覧のエリア名」「中央地図上のエリアの場所」の3点をマーキングします。📍ピンがそのエリアの実際の位置です。ピンチ／ダブルタップで拡大。'));
+    root.appendChild(el('div', 'map-hint', state.planMode
+      ? 'マイプランに登録した出店を、エリアごとの📍ピンで表示しています。下の一覧で店をタップすると、その店の詳しい位置を確認できます。'
+      : '出店名で検索すると、会場マップ上で「店名」「出店一覧のエリア名」「中央地図上のエリアの場所」の3点をマーキングします。📍ピンがそのエリアの実際の位置です。ピンチ／ダブルタップで拡大。'));
 
     const zp = el('div'); zp.id = 'zonePanel';
     root.appendChild(zp);
 
     setupMap();
-    renderZonePanel();
+    if (state.planMode) renderPlanPanel();
+    else renderZonePanel();
   }
 
   function renderMapSug() {
@@ -458,6 +479,7 @@
         state.highlightShop = s.id;
         state.mapShopQuery = '';
         state.selectedZone = null;
+        state.planMode = false;
         renderMap();   // setupMap の ready() が highlightShop を見て自動フォーカス
       };
       box.appendChild(r);
@@ -522,7 +544,10 @@
         p.dataset.zx = z.x; p.dataset.zy = z.y; p.dataset.zone = z.id;
         p.onclick = e => {
           e.stopPropagation();
+          const wasPlan = state.planMode;
           state.selectedZone = z.id; state.highlightShop = null;
+          state.planMode = false;
+          if (wasPlan) { renderMap(); return; }
           focusZone(z.id, true); renderZonePanel(); highlightPins();
         };
         layer.appendChild(p);
@@ -533,6 +558,24 @@
            <div class="pin__label">現在地</div>`);
         p.dataset.zx = state.mePin.x; p.dataset.zy = state.mePin.y;
         layer.appendChild(p);
+      }
+      /* マイプラン：行きたい出店をエリアごとにピン表示（動線設計用） */
+      if (state.planMode) {
+        const byZone = {};
+        SHOPS.filter(s => isFav('shops', s.id)).forEach(s => {
+          (byZone[s.zone] = byZone[s.zone] || []).push(s);
+        });
+        Object.keys(byZone).forEach(zone => {
+          const venue = ZONE_VENUE[zone];
+          if (!venue) return;
+          const list = byZone[zone];
+          const pp = el('div', 'pin pin--plan',
+            `<div class="plan-pin__dot"><span>${list.length}</span></div>
+             <div class="plan-pin__label">${esc(shortName(list[0].zoneName))}</div>`);
+          pp.dataset.zx = venue[0] + venue[2] / 2;
+          pp.dataset.zy = venue[1] + venue[3] / 2;
+          layer.appendChild(pp);
+        });
       }
       /* 選択中ショップ：固定サイズのピン（どの縮尺でも見える）。
          - エリアピン：そのエリアが会場マップ上のどこにあるかを指す
@@ -603,7 +646,10 @@
     $('#zOut').onclick = () => zoomAt(mv.cw / 2, mv.ch / 2, 1 / 1.6);
     $('#zReset').onclick = () => {
       mv.scale = 1; mv.x = 0; mv.y = 0;
+      const wasPlan = state.planMode;
       state.selectedZone = null; state.highlightShop = null;
+      state.planMode = false;
+      if (wasPlan) { renderMap(); return; }
       buildMarkers(); apply(); highlightPins(); renderZonePanel();
     };
     mapApply = apply; highlightPinsFn = highlightPins;
@@ -784,6 +830,52 @@
       card.appendChild(el('div', 'now-empty',
         'このエリアの出店は会場マップ・公式サイトでご確認ください。'));
     }
+  }
+
+  /* マイプラン動線パネル：行きたい出店をエリアごとに一覧表示する */
+  function renderPlanPanel() {
+    const zp = $('#zonePanel');
+    if (!zp) return;
+    const favShops = SHOPS.filter(s => isFav('shops', s.id));
+    if (!favShops.length) {
+      zp.innerHTML = '<div class="card"><div class="now-empty">' +
+        'マイプランに行きたい出店がありません。出店ページで★を付けると、' +
+        'ここに会場内の動線が表示されます。</div></div>';
+      return;
+    }
+    /* エリアごとにまとめる（出店一覧の並び順を保つ） */
+    const byZone = {}, order = [];
+    favShops.forEach(s => {
+      if (!byZone[s.zone]) { byZone[s.zone] = []; order.push(s.zone); }
+      byZone[s.zone].push(s);
+    });
+    zp.innerHTML =
+      `<div class="card zone-panel">
+         <div class="zone-panel__head"><span style="font-size:22px">🗺️</span>
+           <b>マイプランの動線</b></div>
+         <div style="font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px">
+           行きたい出店 ${favShops.length}店／${order.length}エリア — 店名タップで詳しい位置へ</div>
+       </div>`;
+    const card = zp.querySelector('.zone-panel');
+    order.forEach(zone => {
+      const list = byZone[zone];
+      card.appendChild(el('div', null,
+        `<div style="font-size:11.5px;font-weight:800;margin:10px 0 2px">
+         📍 ${esc(shortName(list[0].zoneName))}（${list.length}）</div>`));
+      list.forEach(s => {
+        const row = el('div', 'zone-shop',
+          `<span class="ico">${s.catIcon}</span>
+           <span class="nm">${esc(s.name)}</span><span class="arr">›</span>`);
+        row.onclick = () => {
+          pushRecent('shops', s.id);
+          state.planMode = false;
+          state.highlightShop = s.id;
+          state.selectedZone = null;
+          renderMap();
+        };
+        card.appendChild(row);
+      });
+    });
   }
 
   /* ============================================================
@@ -1108,6 +1200,15 @@
           '<div class="big">🛍️</div>行きたい出店を登録すると<br>ここに一覧表示されます'));
         return;
       }
+      const planBtn = el('button', 'plan-map-btn',
+        '🗺️ 行きたい出店をマップで動線確認');
+      planBtn.onclick = () => {
+        state.planMode = true;
+        state.highlightShop = null;
+        state.selectedZone = null;
+        switchView('map');
+      };
+      root.appendChild(planBtn);
       const g = el('div', 'list-grid');
       favs.forEach(s => {
         const t = el('div', 'tile',
