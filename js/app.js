@@ -912,10 +912,12 @@
 
     const tt = TIMETABLE[d.id];
     const wrap = el('div', 'map-wrap');
+    /* キャンバス側で縦横比を確保（レイアウトシフト防止）。
+       画像自体には width/height 属性を付けない＝ズーム用 .map-inner
+       （絶対配置）内で画像が固定サイズになり比率が崩れるのを防ぐ。 */
     wrap.innerHTML =
       `<div class="map-canvas tt-canvas" id="ttCanvas" style="aspect-ratio:${tt.w} / ${tt.h}">
-         <div class="map-inner" id="ttInner"><img src="${tt.src}" alt="タイムテーブル"
-           id="ttImg" width="${tt.w}" height="${tt.h}"></div>
+         <div class="map-inner" id="ttInner"><img src="${tt.src}" alt="タイムテーブル" id="ttImg"></div>
          <div class="map-zoom">
            <button id="ttIn">＋</button><button id="ttOut">－</button>
            <button id="ttReset" style="font-size:14px">⟳</button>

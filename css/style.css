@@ -267,7 +267,9 @@ main{
 }
 /* 会場マップは全体を一画面に表示（マップ画像の縦横比に合わせる） */
 #mapCanvas{height:auto;aspect-ratio:4056 / 5733;}
-.map-inner{position:absolute;top:0;left:0;transform-origin:0 0;}
+/* 幅を明示しないと、画像実寸 < 画面幅の端末（Safari等）で
+   絶対配置の縮小幅が画像実寸に縮み、画像がはみ出して見切れる。 */
+.map-inner{position:absolute;top:0;left:0;width:100%;transform-origin:0 0;}
 .map-inner img{width:100%;display:block;pointer-events:none;}
 .pin{
   position:absolute;transform:translate(-50%,-100%);
