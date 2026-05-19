@@ -1,7 +1,7 @@
 /* 森、道、市場 2026 ガイド — Service Worker
    コード（html/css/js）はネットワーク優先＝常に最新を表示。
    画像はキャッシュ優先＝オフラインでも高速表示。 */
-const CACHE = 'mm2026-v30';
+const CACHE = 'mm2026-v31';
 
 /* 起動に最低限必要なファイル（軽量）。1つでも失敗すると addAll は全体が
    失敗するため、個別に add し、失敗してもインストールを止めない。 */
@@ -57,15 +57,22 @@ self.addEventListener('fetch', e => {
   if (isCode(url)) {
     /* ネットワーク優先：オンラインなら常に最新、オフラインはキャッシュ。
        HTTPキャッシュを無視して必ず最新を取得する（更新が確実に届くように）。
-       キャッシュも無ければ index.html を返し、白画面を防ぐ。 */
+       正常応答(2xx)のみキャッシュへ保存し、404/500を焼き付けない。
+       キャッシュも無ければ index.html → ルートへ多段フォールバック。 */
     e.respondWith(
       fetch(e.request, { cache: 'reload' }).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        }
         return res;
       }).catch(() =>
-        caches.match(e.request).then(hit =>
-          hit || caches.match('./index.html') || caches.match('./'))
+        caches.match(e.request)
+          .then(hit => hit || caches.match('./index.html'))
+          .then(hit => hit || caches.match('./'))
+          .then(hit => hit || new Response(
+            'オフラインです。電波の良い場所で再度お試しください。',
+            { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }))
       )
     );
   } else {
@@ -74,8 +81,10 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       caches.match(e.request).then(cached =>
         cached || fetch(e.request).then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+          }
           return res;
         }).catch(() =>
           cached || new Response('', { status: 503, statusText: 'offline' })

@@ -522,8 +522,14 @@
         const sx = mv.x + (zx / 100 * mv.innerW) * mv.scale;
         const sy = mv.y + (zy / 100 * mv.innerH) * mv.scale;
         p.style.left = sx + 'px'; p.style.top = sy + 'px';
-        p.style.display = (sx < -60 || sx > mv.cw + 60 ||
-                           sy < -10 || sy > mv.ch + 60) ? 'none' : '';
+        /* 横長ラベルのピン（選択中ショップ・エリア・マイプラン）は
+           余白を大きく取り、画面端で誤って消えないようにする */
+        const wide = p.classList.contains('pin--shop') ||
+                     p.classList.contains('pin--area-loc') ||
+                     p.classList.contains('pin--plan');
+        const mx = wide ? 210 : 60, mtop = wide ? 90 : 10;
+        p.style.display = (sx < -mx || sx > mv.cw + mx ||
+                           sy < -mtop || sy > mv.ch + 60) ? 'none' : '';
       });
     }
     function buildMarkers() {
@@ -743,18 +749,24 @@
     if (!svg) return;
     if (!s) { svg.innerHTML = ''; return; }
     let html = '';
-    /* (3) そのエリアが会場マップ上のどこにあるか：中央地図のエリア名を丸囲み */
     const venue = ZONE_VENUE[s.zone];
-    if (venue) html += ellipseSVG(venue, 'area-circle area-circle--venue', 2.6, 2.1);
-    /* (2) その店名が記載されているエリア名：出店一覧の見出しを丸囲み */
     const head = ZONE_LABEL_LIST[s.zone];
+    /* 中央地図のエリア名と出店一覧の見出しが同じ位置なら丸は1つだけ
+       （二重円による誤解を避ける） */
+    const sameSpot = venue && head &&
+      Math.abs(venue[0] - head[0]) < 0.6 && Math.abs(venue[1] - head[1]) < 0.6;
+    /* (3) そのエリアが会場マップ上のどこにあるか：中央地図のエリア名を丸囲み */
+    if (venue && !sameSpot)
+      html += ellipseSVG(venue, 'area-circle area-circle--venue', 2.6, 2.1);
+    /* (2) その店名が記載されているエリア名：出店一覧の見出しを丸囲み */
     if (head) html += ellipseSVG(head, 'area-circle area-circle--list', 1.4, 1.6);
-    /* (1) 店名が記載されている部分：出店一覧の店名を赤枠で囲う */
-    const pad = 0.4;
+    /* (1) 店名が記載されている部分：出店一覧の店名を赤枠で囲う。
+       高さは複数行抽出の異常値に備えて上限を設ける（近隣店への被り防止）。 */
+    const pad = 0.4, boxH = Math.min(s.mh, 1.3);
     html += '<rect class="area-namebox" x="' + (s.mx - pad).toFixed(2) +
       '" y="' + (s.my - pad).toFixed(2) +
       '" width="' + (s.mw + pad * 2).toFixed(2) +
-      '" height="' + (s.mh + pad * 2).toFixed(2) + '" rx="0.5"/>';
+      '" height="' + (boxH + pad * 2).toFixed(2) + '" rx="0.5"/>';
     svg.innerHTML = html;
   }
 
@@ -785,8 +797,12 @@
     if (animate) {
       const inner = $('#mapInner');
       if (inner) {
+        const sess = mapSession;
         inner.style.transition = 'transform .4s ease';
-        setTimeout(() => { if (inner) inner.style.transition = ''; }, 430);
+        setTimeout(() => {
+          const i = $('#mapInner');
+          if (i && sess === mapSession) i.style.transition = '';
+        }, 430);
       }
     }
     mapApply();
