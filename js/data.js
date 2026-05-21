@@ -27,7 +27,7 @@ const FESTIVAL = {
     access: 'https://morimichiichiba.jp/access/',
     map: 'https://morimichiichiba.jp/map/'
   },
-  weather: 'https://tenki.jp/forecast/5/26/5110/23214/',
+  weather: 'https://tenki.jp/forecast/5/26/5120/23214/',
   access: [
     { icon: '🚌', title: 'JR蒲郡駅 有料シャトルバス',
       detail: '5/22は10:00〜18:00、5/23・24は8:30〜18:00運行。復路は最終22:00頃（5/24は21:00頃）。所要約20分。',
