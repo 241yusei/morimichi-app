@@ -264,21 +264,6 @@
       '必ず <a href="' + FESTIVAL.official +
       '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
 
-    /* 本日のタイムテーブル */
-    root.appendChild(secTitle('タイムテーブル', 'TIMETABLE'));
-    const tt = el('div', 'card home-tt');
-    const ttDay = FESTIVAL.days.find(d => d.id === state.day) || FESTIVAL.days[0];
-    tt.innerHTML =
-      `<div class="home-tt__row">
-         <div><b style="font-size:14px">${ttDay.label} ${ttDay.dow} のタイムテーブル</b>
-         <p style="font-size:11px;color:var(--sub)">公式タイムテーブルを見る</p></div>
-         <span style="font-size:22px">🕒</span>
-       </div>
-       <img src="${TIMETABLE[ttDay.id].src}" alt="タイムテーブル" loading="lazy"
-         width="${TIMETABLE[ttDay.id].w}" height="${TIMETABLE[ttDay.id].h}">`;
-    tt.onclick = () => { state.day = ttDay.id; renderHeader(); switchView('timetable'); };
-    root.appendChild(tt);
-
     /* クイック */
     root.appendChild(secTitle('クイックメニュー', 'MENU'));
     const qg = el('div', 'quick-grid');
