@@ -12,8 +12,8 @@
     planMode: false,       // マイプランの出店をまとめてマップ表示
     placingMe: false,
     mapShopQuery: '',
-    artistQuery: '',
-    shopQuery: '', shopCat: 'all',
+    artistQuery: '', artistDay: 'all',
+    shopQuery: '', shopZone: 'all',
     myplanTab: 'artists',
     fav: load('mm2026_fav', { artists: [], shops: [] }),
     checks: load('mm2026_checks', {}),
@@ -466,15 +466,17 @@
     const nq = normKey(state.mapShopQuery);
     box.innerHTML = '';
     let list, isRecent = false;
+    /* マップ検索は座標を持つ店のみ対象（追加店はマップ上に位置が無い） */
     if (!nq) {
       /* 未入力時は最近チェックした出店を提示 */
       list = state.recent.shops
-        .map(id => SHOPS.find(s => s.id === id)).filter(Boolean).slice(0, 6);
+        .map(id => SHOPS.find(s => s.id === id))
+        .filter(s => s && s.hasMapPos).slice(0, 6);
       isRecent = true;
       if (!list.length) return;
       box.appendChild(el('div', 'map-sug__head', '最近チェックした出店'));
     } else {
-      list = SHOPS.filter(s => s.nk.indexOf(nq) !== -1).slice(0, 10);
+      list = SHOPS.filter(s => s.hasMapPos && s.nk.indexOf(nq) !== -1).slice(0, 10);
     }
     list.forEach(s => {
       const r = el('div', 'map-sug__item',
@@ -584,13 +586,16 @@
             ap.dataset.zy = venue[1] + venue[3] / 2;
             layer.appendChild(ap);
           }
-          const sp = el('div', 'pin pin--shop',
-            `<div class="shop-pin__body">${s.catIcon} ${
-               s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>
-             <div class="shop-pin__tip"></div>`);
-          sp.dataset.zx = s.mx + s.mw / 2;   // 店名の中心を指す
-          sp.dataset.zy = s.my + s.mh / 2;
-          layer.appendChild(sp);
+          /* 座標を持つ店のみ店名ピンを置く（追加店は hasMapPos=false） */
+          if (s.hasMapPos) {
+            const sp = el('div', 'pin pin--shop',
+              `<div class="shop-pin__body">${s.catIcon} ${
+                 s.booth ? '<b>' + s.booth + '</b> ' : ''}${esc(s.name)}</div>
+               <div class="shop-pin__tip"></div>`);
+            sp.dataset.zx = s.mx + s.mw / 2;   // 店名の中心を指す
+            sp.dataset.zy = s.my + s.mh / 2;
+            layer.appendChild(sp);
+          }
         }
       }
       placeMarkers();
@@ -716,6 +721,18 @@
     return n.replace(/（.*?）/g, '').replace(/ STAGE| GATE/gi, '')
             .replace('MORI MICHI ', '').replace(' by Purveyors', '').trim();
   }
+  /* 出演日ヘルパー。FESTIVAL.days を参照し、英字曜日を和名に変換する。 */
+  const DOW_JA = { MON: '月', TUE: '火', WED: '水', THU: '木',
+                   FRI: '金', SAT: '土', SUN: '日' };
+  function dayChip(d) { return d.label + ' ' + (DOW_JA[d.dow] || d.dow); }
+  /* アーティストの出演日を「5/22(金)・5/24(日)」形式の文字列にする。 */
+  function artistDaysText(a) {
+    const days = (a.days || [])
+      .map(id => FESTIVAL.days.find(d => d.id === id))
+      .filter(Boolean);
+    if (!days.length) return '';
+    return days.map(d => d.label + '(' + (DOW_JA[d.dow] || d.dow) + ')').join('・');
+  }
 
   /* 選択中ショップを会場マップ上に3点マーキング。
      SVG (#areaSvg) は #mapInner 内にあり、マップと一緒に拡縮される。
@@ -730,7 +747,8 @@
   function drawAreaMark(s) {
     const svg = document.getElementById('areaSvg');
     if (!svg) return;
-    if (!s) { svg.innerHTML = ''; return; }
+    /* 座標を持たない追加店はマップ上に矩形を描けないため何も描かない */
+    if (!s || !s.hasMapPos) { svg.innerHTML = ''; return; }
     let html = '';
     const venue = ZONE_VENUE[s.zone];
     const head = ZONE_LABEL_LIST[s.zone];
@@ -756,12 +774,16 @@
   function focusZone(zoneId, animate) {
     const z = ZONE_BY_ID[zoneId];
     if (!z || !mv.cw) return;
+    /* 座標未取得のエリア（公式照合で追加）はマップ上の位置が無いため
+       flyTo しない。下部の出店パネルのみ表示する。 */
+    if (typeof z.x !== 'number' || typeof z.y !== 'number') return;
     flyTo(z.x, z.y, z.type === 'stage' ? 2.4 : 2.8, animate);
     highlightPinsFn();
   }
   function focusShop(shopId) {
     const s = SHOPS.find(x => x.id === shopId);
     if (!s || !mv.cw) return;
+    if (!s.hasMapPos) return;          // 座標なしの追加店は寄れない
     const box = ZONE_BOX[s.zone];
     if (box) {
       /* エリア全体（出店一覧ブロック）が収まるように寄る */
@@ -817,8 +839,13 @@
            <span class="nm">${esc(s.name)}</span><span class="arr">›</span>`);
         row.onclick = () => {
           pushRecent('shops', s.id);
-          state.highlightShop = s.id; state.selectedZone = null;
-          renderMap();
+          /* 座標を持つ店はマップ上でハイライト、無い店は詳細を開く */
+          if (s.hasMapPos) {
+            state.highlightShop = s.id; state.selectedZone = null;
+            renderMap();
+          } else {
+            openShop(s.id);
+          }
         };
         card.appendChild(row);
       });
@@ -1020,6 +1047,16 @@
       state.artistQuery = e.target.value; artistSearch();
     };
     root.appendChild(sb);
+    /* 日程フィルタ。すべて＋公演3日（5/22・5/23・5/24）で出演者を絞り込む。 */
+    const dayChips = el('div', 'chips');
+    [['all', 'すべて']].concat(FESTIVAL.days.map(d => [d.id, dayChip(d)]))
+      .forEach(c => {
+        const ch = el('button',
+          'chip' + (c[0] === state.artistDay ? ' active' : ''), c[1]);
+        ch.onclick = () => { state.artistDay = c[0]; renderArtists(); };
+        dayChips.appendChild(ch);
+      });
+    root.appendChild(dayChips);
     root.appendChild(el('div', 'notice',
       'ℹ️ 出演日・ステージ・時間は ' +
       '<a href="' + FESTIVAL.links.timetable + '" target="_blank" rel="noopener">' +
@@ -1029,10 +1066,11 @@
     renderArtistList();
   }
   function artistTile(a) {
+    const dt = artistDaysText(a);
     const t = el('div', 'tile',
       `<div class="tile__cat">🎤</div>
        <div class="tile__name">${esc(a.name)}</div>
-       <div class="tile__meta">出演アーティスト</div>
+       <div class="tile__meta">${dt ? '🗓 ' + esc(dt) : '出演アーティスト'}</div>
        <button class="tile__fav" aria-label="お気に入り">${
          isFav('artists', a.id) ? '★' : '☆'}</button>`);
     t.onclick = () => openArtist(a.id);
@@ -1046,11 +1084,14 @@
   function renderArtistList() {
     const w = $('#artistListWrap'); if (!w) return;
     const nq = normKey(state.artistQuery);
-    let list = ARTISTS.filter(a => !nq || a.nk.indexOf(nq) !== -1);
+    const dayOk = a => state.artistDay === 'all' ||
+      (a.days && a.days.indexOf(state.artistDay) !== -1);
+    let list = ARTISTS.filter(a => (!nq || a.nk.indexOf(nq) !== -1) && dayOk(a));
     w.innerHTML = '';
     if (!nq) {
       const rec = state.recent.artists
-        .map(id => ARTISTS.find(a => a.id === id)).filter(Boolean);
+        .map(id => ARTISTS.find(a => a.id === id))
+        .filter(a => a && dayOk(a));
       if (rec.length) {
         w.appendChild(el('div', 'list-count', '最近チェックしたアーティスト'));
         const rg = el('div', 'list-grid');
@@ -1089,14 +1130,19 @@
       state.shopQuery = e.target.value; shopSearch();
     };
     root.appendChild(sb);
+    /* エリアフィルタ。すべて＋出店のある各エリアで絞り込む。
+       マップのエリア括りと対応し、選択中はマップ表示への導線を出す。
+       出店ゼロのエリア（のんのんパレード等）はチップに出さない。 */
     const chips = el('div', 'chips');
-    [['all', 'すべて'], ['food', '🍜 フード'], ['drink', '🍺 ドリンク'],
-     ['sweets', '🍩 スイーツ'], ['goods', '🛍️ 雑貨'], ['art', '🎨 アート']]
-      .forEach(c => {
-        const ch = el('button', 'chip' + (c[0] === state.shopCat ? ' active' : ''), c[1]);
-        ch.onclick = () => { state.shopCat = c[0]; renderShops(); };
-        chips.appendChild(ch);
-      });
+    [['all', 'すべて']].concat(
+      ZONES.filter(z => z.type === 'area' &&
+        SHOPS.some(s => s.zone === z.id)).map(z => [z.id, shortName(z.name)])
+    ).forEach(c => {
+      const ch = el('button',
+        'chip' + (c[0] === state.shopZone ? ' active' : ''), c[1]);
+      ch.onclick = () => { state.shopZone = c[0]; renderShops(); };
+      chips.appendChild(ch);
+    });
     root.appendChild(chips);
     root.appendChild(el('div', 'notice',
       'ℹ️ 出店をタップ →「マップで見る」で、店名・出店一覧のエリア名・中央地図上のエリアの場所をマーキングします。' +
@@ -1124,15 +1170,32 @@
   function renderShopList() {
     const w = $('#shopListWrap'); if (!w) return;
     const nq = normKey(state.shopQuery);
-    let list = SHOPS.slice();
-    if (state.shopCat !== 'all') list = list.filter(s => s.cat === state.shopCat);
+    const zoneOk = s => state.shopZone === 'all' || s.zone === state.shopZone;
+    let list = SHOPS.filter(zoneOk);
     if (nq) list = list.filter(s => s.nk.indexOf(nq) !== -1);
     w.innerHTML = '';
+    /* エリア選択中は、そのエリアをマップで見る導線を最上部に出す。
+       座標を持たないエリア（公式照合で追加）はマップ表示できないため出さない。 */
+    if (state.shopZone !== 'all') {
+      const z = ZONE_BY_ID[state.shopZone];
+      if (z && typeof z.x === 'number') {
+        const mb = el('button', 'btn btn--primary',
+          '🗺️ ' + shortName(z.name) + ' をマップで見る');
+        mb.style.width = '100%';
+        mb.style.marginBottom = '8px';
+        mb.onclick = () => {
+          state.selectedZone = state.shopZone;
+          state.highlightShop = null;
+          switchView('map');
+        };
+        w.appendChild(mb);
+      }
+    }
     /* 検索が空のときは「最近チェックした出店」を上部に提示 */
     if (!nq) {
       const rec = state.recent.shops
         .map(id => SHOPS.find(s => s.id === id))
-        .filter(s => s && (state.shopCat === 'all' || s.cat === state.shopCat));
+        .filter(s => s && zoneOk(s));
       if (rec.length) {
         w.appendChild(el('div', 'list-count', '最近チェックした出店'));
         const rg = el('div', 'list-grid');
@@ -1186,10 +1249,11 @@
         'タイムテーブル</a> で確認できます。'));
       const g = el('div', 'list-grid');
       favs.forEach(a => {
+        const dt = artistDaysText(a);
         const t = el('div', 'tile',
           `<div class="tile__cat">🎤</div>
            <div class="tile__name">${esc(a.name)}</div>
-           <div class="tile__meta">出演アーティスト</div>
+           <div class="tile__meta">${dt ? '🗓 ' + esc(dt) : '出演アーティスト'}</div>
            <button class="tile__fav">★</button>`);
         t.onclick = () => openArtist(a.id);
         t.querySelector('.tile__fav').onclick = e => {
@@ -1273,13 +1337,17 @@
     const a = ARTISTS.find(x => x.id === id); if (!a) return;
     pushRecent('artists', a.id);
     const faved = isFav('artists', a.id);
+    const dt = artistDaysText(a);
     openModal(
       `<div class="modal__handle"></div>
        <div class="modal__cat">🎤</div>
        <div class="modal__title">${esc(a.name)}</div>
        <div class="modal__sub">出演アーティスト</div>
+       <div class="modal__row"><div class="ico">🗓</div><div>
+         <div class="k">出演日</div>
+         <div class="v">${dt ? esc(dt) : '公式タイムテーブルでご確認ください'}</div></div></div>
        <div class="modal__row"><div class="ico">🕒</div><div>
-         <div class="k">出演日・ステージ・時間</div>
+         <div class="k">ステージ・時間</div>
          <div class="v" style="font-size:12px">タイムテーブルでご確認ください</div></div></div>
        <div class="modal__btns">
          <button class="btn btn--fav ${faved ? 'on' : ''}" id="mFav">
@@ -1304,29 +1372,31 @@
        <div class="modal__cat">${s.catIcon}</div>
        <div class="modal__title">${esc(s.name)}</div>
        <div class="modal__sub">出店ショップ</div>
-       <div class="modal__row"><div class="ico">${s.catIcon}</div><div>
-         <div class="k">カテゴリ</div><div class="v">${esc(s.catLabel)}</div></div></div>
        <div class="modal__row"><div class="ico">📍</div><div>
          <div class="k">出店エリア</div><div class="v">${esc(s.zoneName)}</div></div></div>
-       ${s.booth ? `<div class="modal__row"><div class="ico">🔢</div><div>
+       ${s.hasMapPos && s.booth ? `<div class="modal__row"><div class="ico">🔢</div><div>
          <div class="k">会場マップ ブース番号</div>
          <div class="v">${esc(shortName(s.zoneName))} ${s.booth}番</div></div></div>` : ''}
-       <p style="font-size:10.5px;color:var(--sub);margin:2px 4px 10px">
-         「マップで見る」で、①出店一覧の店名（赤枠）②出店一覧のエリア名（赤丸）③そのエリアが会場マップ上のどこにあるか（📍ピン＋赤丸）の3点を表示します。${
-         s.booth ? '会場では出店一覧の番号「' + s.booth + '」と同じ番号のブースが目印です。' :
-         '会場内の詳しい位置は会場マップでご確認ください。'}</p>
+       <p style="font-size:10.5px;color:var(--sub);margin:2px 4px 10px">${
+         s.hasMapPos
+           ? '「マップで見る」で、①出店一覧の店名（赤枠）②出店一覧のエリア名（赤丸）③そのエリアが会場マップ上のどこにあるか（📍ピン＋赤丸）の3点を表示します。' +
+             (s.booth ? '会場では出店一覧の番号「' + s.booth + '」と同じ番号のブースが目印です。' :
+              '会場内の詳しい位置は会場マップでご確認ください。')
+           : 'この出店は公式サイトで追加確認した店舗です。会場マップ上の正確な位置は未取得のため、現地では「' +
+             esc(shortName(s.zoneName)) + '」エリアの案内・公式マップでご確認ください。'}</p>
        <div class="modal__btns">
          <button class="btn btn--fav ${faved ? 'on' : ''}" id="sFav">
            ${faved ? '★ 登録済み' : '☆ マイプランに追加'}</button></div>
-       <div class="modal__btns">
-         <button class="btn btn--primary" id="sMap">🗺️ マップで店名・エリアを見る</button></div>`);
+       ${s.hasMapPos ? `<div class="modal__btns">
+         <button class="btn btn--primary" id="sMap">🗺️ マップで店名・エリアを見る</button></div>` : ''}`);
     $('#sFav').onclick = () => {
       toast(toggleFav('shops', s.id) ? '★ マイプランに追加' : 'マイプランから削除');
       saveFav(); openShop(id); updateTabBadge();
       if (state.view === 'shops') renderShopList();
       if (state.view === 'myplan') renderMyplan();
     };
-    $('#sMap').onclick = () => {
+    const sMap = $('#sMap');
+    if (sMap) sMap.onclick = () => {
       closeModal();
       state.highlightShop = s.id;
       state.selectedZone = null;

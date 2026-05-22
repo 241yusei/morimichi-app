@@ -97,10 +97,10 @@ const ZONES = [
   { id: 'eatbeat-ichi', name: 'EATBEAT!10（出店）', type: 'area', x: 40, y: 72 },
   { id: 'liverary', name: 'LIVERARY pre. エリア', type: 'area', x: 7, y: 23 },
   { id: 'tane',     name: '種と旅と', type: 'area', x: 25, y: 10 },
-  { id: 'yuenchi-market', name: '遊園地MARKET', type: 'area', x: 54, y: 6 },
-  { id: 'yuenchi-market2', name: '遊園地MARKET（北）', type: 'area', x: 64, y: 5 },
-  { id: 'morimichi-disco', name: '森道食堂（DISCO支店）', type: 'area', x: 50, y: 13 },
-  { id: 'morimichi-umi', name: '森道食堂（海支店）', type: 'area', x: 83, y: 63 },
+  { id: 'yuenchi-market', name: 'SPLASH MARKET', type: 'area', x: 54, y: 6 },
+  { id: 'yuenchi-market2', name: '遊園地MARKET', type: 'area', x: 64, y: 5 },
+  { id: 'morimichi-disco', name: '森道食堂 DISCO支店', type: 'area', x: 50, y: 13 },
+  { id: 'morimichi-umi', name: '森道食堂 海支店', type: 'area', x: 83, y: 63 },
   { id: 'kaigan6',  name: '海岸通り六丁目', type: 'area', x: 31, y: 93 },
   { id: 'river-market', name: 'RIVER MARKET', type: 'area', x: 14, y: 50 },
   { id: 'kyoryu',     name: 'KYORYU STREET',  type: 'area', x: 17, y: 53 },
@@ -118,34 +118,125 @@ const ZONES = [
   { id: 'center-gai',name: '森道センター街',  type: 'area', x: 59, y: 86 },
   { id: 'nagano',    name: 'ながのなの',     type: 'area', x: 77, y: 87 },
   { id: 'shibafu',   name: '森道芝生広場・新京都会館', type: 'area', x: 90, y: 81 },
-  { id: 'nonnon',    name: 'のんのんパレード', type: 'area', x: 40, y: 95 }
+  { id: 'nonnon',    name: 'のんのんパレード', type: 'area', x: 40, y: 95 },
+  /* 公式エリア。会場マップPDF上の位置が未取得のため座標なし（マップピン非表示）。 */
+  { id: 'shimanami', name: 'しまなみやまなみバイブス県', type: 'area', x: null, y: null }
 ];
 
 /* 出演アーティスト（公式アーティストページ掲載順）
-   ※出演日時・ステージはタイムテーブル画像で確認 */
-const ARTIST_NAMES = [
-  '∈Y∋','Aisho Nakajima','adieu','abentis','ecec','iga','石野卓球',
-  'VMO a.k.a Violent Magic Orchestra','vq','West Ape','N²','FCO.','Elle',
-  '大友良英','岡村靖幸','オカモトレイジ(OKAMOTO\'S)','掟ポルシェ','OddRe:',
-  '思い出野郎Aチーム','角銅真実','片岡メリヤス × 井手健介','カネコアヤノ＋本村拓磨',
-  'Kamui','Galileo Galilei','かわにしなつき','川辺素(BAND SET)',
-  '川村亘平斎と岬の魔女たち','キタニタツヤ','君島大空(独奏)','奇妙礼太郎',
-  '木村カエラ','きゃりーぱみゅぱみゅ','KIRINJI','草刈愛美','kurayamisaka','Kroi',
-  'GUNSOKAI 郡囃会','ケケノコ族','コロコロチキチキペッパーズ ナダル','坂田律子',
-  '坂本美雨 With 伊藤ゴロー','the cabs','さとうもか(Trio set)',
-  '佐野元春 & THE COYOTE BAND','the bercedes menz','SAMO','さらさ(Duo Set)',
-  'Shhhhh','SEEDA','Siero','6EYES','柴田聡子(BAND SET)','シャッポ','JUN INAGAWA',
-  'Shoma fr,dambosound','Ginger Root(Solo Set)','神聖かまってちゃん','Jinmenusagi',
-  '砂原良徳','SPECIAL OTHERS','Daoko','D.A.N.','珍盤亭娯楽師匠','discordsquad2k',
-  'Texas 3000','TETORA','トップシークレットマン','とろサーモン久保田','長瀬有花',
-  'nutsman','二階堂和美','NISENNENMONDAI','never young beach','野村友里(eatrip)',
-  '蓮沼執太フィル','Hump Back','Peterparker69','ピーナッツくん','BBBBBBB','ヒカシュー',
-  'BYORA','Billyrrom','5Windows Freak (DJ SET)','5 Star Cowboy','FELINE',
-  'ブランデー戦記','BREIMEN','Frog 3','Bonbero','Mom','marucoporoporo',
-  '向井秀徳アコースティック＆エレクトリック','MONO NO AWARE','YAGI YOYO TEAM',
-  'やけのはら','柳瀬白瀬(from betcover!!)','Yog*','yonige','ヨネダ2000',
-  'Lucky Kilimanjaro','ランジャタイ','lilbesh ramko','rui','レテ','ROBBIN(L.O.S.T)',
-  'Worldwide Skippa','Watson'
+   days … 出演日（公式 artist_day01/02/03 と照合）。d1=5/22(金)・d2=5/23(土)・d3=5/24(日)。
+   ※出演時刻・ステージはタイムテーブル画像で確認 */
+const ARTIST_DATA = [
+  { name: '∈Y∋', days: ['d1'] },
+  { name: 'Aisho Nakajima', days: ['d3'] },
+  { name: 'adieu', days: ['d2'] },
+  { name: 'abentis', days: ['d2'] },
+  { name: 'ecec', days: ['d3'] },
+  { name: 'iga', days: ['d2'] },
+  { name: '石野卓球', days: ['d1'] },
+  { name: 'VMO a.k.a Violent Magic Orchestra', days: ['d2'] },
+  { name: 'vq', days: ['d3'] },
+  { name: 'West Ape', days: ['d3'] },
+  { name: 'N²', days: ['d3'] },
+  { name: 'FCO.', days: ['d3'] },
+  { name: 'Elle', days: ['d2'] },
+  { name: '大友良英', days: ['d1'] },
+  { name: '岡村靖幸', days: ['d1'] },
+  { name: 'オカモトレイジ(OKAMOTO\'S)', days: ['d3'] },
+  { name: '掟ポルシェ', days: ['d1'] },
+  { name: 'OddRe:', days: ['d3'] },
+  { name: '思い出野郎Aチーム', days: ['d3'] },
+  { name: '角銅真実', days: ['d1'] },
+  { name: '片岡メリヤス × 井手健介', days: ['d1'] },
+  { name: 'カネコアヤノ＋本村拓磨', days: ['d1'] },
+  { name: 'Kamui', days: ['d2'] },
+  { name: 'Galileo Galilei', days: ['d3'] },
+  { name: 'かわにしなつき', days: ['d2'] },
+  { name: '川辺素(BAND SET)', days: ['d1'] },
+  { name: '川村亘平斎と岬の魔女たち', days: ['d1'] },
+  { name: 'キタニタツヤ', days: ['d3'] },
+  { name: '君島大空(独奏)', days: ['d1'] },
+  { name: '奇妙礼太郎', days: ['d1', 'd3'] },
+  { name: '木村カエラ', days: ['d2'] },
+  { name: 'きゃりーぱみゅぱみゅ', days: ['d3'] },
+  { name: 'KIRINJI', days: ['d2'] },
+  { name: '草刈愛美', days: ['d2'] },
+  { name: 'kurayamisaka', days: ['d2'] },
+  { name: 'Kroi', days: ['d1'] },
+  { name: 'GUNSOKAI 郡囃会', days: ['d2'] },
+  { name: 'ケケノコ族', days: ['d2'] },
+  { name: 'コロコロチキチキペッパーズ ナダル', days: ['d2'] },
+  { name: '坂田律子', days: ['d3'] },
+  { name: '坂本美雨 With 伊藤ゴロー', days: ['d1'] },
+  { name: 'the cabs', days: ['d2'] },
+  { name: 'さとうもか(Trio set)', days: ['d3'] },
+  { name: '佐野元春 & THE COYOTE BAND', days: ['d2'] },
+  { name: 'the bercedes menz', days: ['d1'] },
+  { name: 'SAMO', days: ['d2'] },
+  { name: 'さらさ(Duo Set)', days: ['d1'] },
+  { name: 'Shhhhh', days: ['d2'] },
+  { name: 'SEEDA', days: ['d2'] },
+  { name: 'Siero', days: ['d2'] },
+  { name: '6EYES', days: ['d1'] },
+  { name: '柴田聡子(BAND SET)', days: ['d3'] },
+  { name: 'シャッポ', days: ['d3'] },
+  { name: 'JUN INAGAWA', days: ['d3'] },
+  { name: 'Shoma fr,dambosound', days: ['d3'] },
+  { name: 'Ginger Root(Solo Set)', days: ['d1'] },
+  { name: '神聖かまってちゃん', days: ['d2'] },
+  { name: 'Jinmenusagi', days: ['d3'] },
+  { name: '砂原良徳', days: ['d2'] },
+  { name: 'SPECIAL OTHERS', days: ['d2'] },
+  { name: 'Daoko', days: ['d1'] },
+  { name: 'D.A.N.', days: ['d1'] },
+  { name: '珍盤亭娯楽師匠', days: ['d2'] },
+  { name: 'discordsquad2k', days: ['d2'] },
+  { name: 'Texas 3000', days: ['d2'] },
+  { name: 'TETORA', days: ['d3'] },
+  { name: 'トップシークレットマン', days: ['d2'] },
+  { name: 'とろサーモン久保田', days: ['d3'] },
+  { name: '長瀬有花', days: ['d3'] },
+  { name: 'nutsman', days: ['d1'] },
+  { name: '二階堂和美', days: ['d1'] },
+  { name: 'NISENNENMONDAI', days: ['d2'] },
+  { name: 'never young beach', days: ['d3'] },
+  { name: '野村友里(eatrip)', days: ['d1'] },
+  { name: '蓮沼執太フィル', days: ['d3'] },
+  { name: 'Hump Back', days: ['d3'] },
+  { name: 'Peterparker69', days: ['d3'] },
+  { name: 'ピーナッツくん', days: ['d1'] },
+  { name: 'BBBBBBB', days: ['d1'] },
+  { name: 'ヒカシュー', days: ['d3'] },
+  { name: 'BYORA', days: ['d3'] },
+  { name: 'Billyrrom', days: ['d3'] },
+  { name: '5Windows Freak (DJ SET)', days: ['d3'] },
+  { name: '5 Star Cowboy', days: ['d2'] },
+  { name: 'FELINE', days: ['d3'] },
+  { name: 'ブランデー戦記', days: ['d2'] },
+  { name: 'BREIMEN', days: ['d2'] },
+  { name: 'Frog 3', days: ['d3'] },
+  { name: 'Bonbero', days: ['d3'] },
+  { name: 'Mom', days: ['d3'] },
+  { name: 'marucoporoporo', days: ['d3'] },
+  { name: '向井秀徳アコースティック＆エレクトリック', days: ['d1'] },
+  { name: 'MONO NO AWARE', days: ['d2'] },
+  { name: 'YAGI YOYO TEAM', days: ['d3'] },
+  { name: 'やけのはら', days: ['d1'] },
+  { name: '柳瀬白瀬(from betcover!!)', days: ['d2'] },
+  { name: 'Yog*', days: ['d2'] },
+  { name: 'yonige', days: ['d2'] },
+  { name: 'ヨネダ2000', days: ['d2'] },
+  { name: 'Lucky Kilimanjaro', days: ['d1'] },
+  { name: 'ランジャタイ', days: ['d3'] },
+  { name: 'lilbesh ramko', days: ['d3'] },
+  { name: 'rui', days: ['d3'] },
+  { name: 'レテ', days: ['d2'] },
+  { name: 'ROBBIN(L.O.S.T)', days: ['d3'] },
+  { name: 'Worldwide Skippa', days: ['d2'] },
+  { name: 'Watson', days: ['d2'] },
+  /* 以下は公式照合で判明した追加分（既存IDを崩さないため末尾に追加） */
+  { name: 'Tade Dust', days: ['d3'] },
+  { name: '奇妙礼太郎BAND', days: ['d3'] }
 ];
 
 /* 出店ショップ（公式マップPDF「出店一覧」掲載の全店・約420店）
@@ -572,7 +663,130 @@ const SHOP_DATA = [
   ["TARELとcam","goods","shibafu",89.29,96.17,5.7,0.57,24],
   ["山ねこ","goods","shibafu",89.29,96.7,3.69,0.57,25],
   ["タコとケンタロー","goods","shibafu",89.29,97.23,6.22,0.57,26],
-  ["VOU/棒","goods","shibafu",89.29,97.77,4.61,0.57,27]
+  ["VOU/棒","goods","shibafu",89.29,97.77,4.61,0.57,27],
+
+  /* ------- 公式サイト照合で追加した出店（2026-05-22 時点） -------
+     公式 morimichiichiba.jp の各エリアページと照合し、未掲載だった店を補完。
+     公式マップPDFの座標が無いため [店名, カテゴリ, エリアID] の3要素形式。
+     hasMapPos=false となり、マップのハイライト対象外（リスト・検索には出る）。
+     カテゴリは店名からの推定。 */
+  ["OFF THE RECORD","art","liverary"],
+  ["社交酒場イム","drink","liverary"],
+  ["BURGER STAND haveagoodtime. x daybyday","food","liverary"],
+  ["BASE LAYER HOTEL","goods","liverary"],
+
+  ["岩田商店","goods","eatbeat-ichi"],
+
+  ["hitoha COFFEE & GRANOLA","drink","east-caravan"],
+
+  ["IMAGINE.COFEEE","drink","shimanami"],
+  ["エスニックスタンド メイクワンツー","food","shimanami"],
+  ["がふ","goods","shimanami"],
+  ["KAMERA","goods","shimanami"],
+  ["Kougame","goods","shimanami"],
+  ["コウボパン小さじいち","food","shimanami"],
+  ["goffo","goods","shimanami"],
+  ["山窩 -旅とてしごと-","goods","shimanami"],
+  ["ジークマンストア","goods","shimanami"],
+  ["自然食コタン","food","shimanami"],
+  ["鈴木裕之の似顔絵屋さん","art","shimanami"],
+  ["TYSON PIZZA","food","shimanami"],
+  ["DADA NUTS BUTTER","food","shimanami"],
+  ["Tanigaki","goods","shimanami"],
+  ["WHW!","goods","shimanami"],
+  ["テルツォテンポ","goods","shimanami"],
+  ["ドットコミュ","goods","shimanami"],
+  ["流しのビリヤニ","food","shimanami"],
+  ["nuttsponchon","goods","shimanami"],
+  ["NEWHELLOSHOP","goods","shimanami"],
+  ["Passific Brewing","drink","shimanami"],
+  ["フベン","goods","shimanami"],
+  ["FLOAT","goods","shimanami"],
+  ["BAILER","goods","shimanami"],
+  ["ミルク工房そら","sweets","shimanami"],
+  ["ヤンフー×イワサトミキ","goods","shimanami"],
+  ["LA PITA DE MAISON CINQUANTECINQ","food","shimanami"],
+  ["wineshop&stand slowcave","drink","shimanami"],
+
+  ["TOKIIRO COFFEE ＆ POMO MAISON","drink","play-market"],
+  ["hacu","goods","play-market"],
+  ["FRECKLE","goods","play-market"],
+
+  ["EN/ME","goods","ukiuki"],
+  ["ORANGUTAN","goods","ukiuki"],
+  ["KISO","goods","ukiuki"],
+  ["Slō","goods","ukiuki"],
+  ["TOO WOOD","goods","ukiuki"],
+  ["PADDLERS COFFEE","drink","ukiuki"],
+  ["山城果樹園","food","ukiuki"],
+  ["LOU","goods","ukiuki"],
+
+  ["AKITO COFFEE","drink","tane"],
+  ["Appartement coffee","drink","tane"],
+  ["ARBOL ICECREAM","sweets","tane"],
+  ["ALO（アロ）","goods","tane"],
+  ["伊藤渉","goods","tane"],
+  ["Ethnic tam＋neutral","goods","tane"],
+  ["HOWENE","goods","tane"],
+  ["お酒と料理えいよう","food","tane"],
+  ["カルパ","goods","tane"],
+  ["樹和堂","goods","tane"],
+  ["sagoggio","goods","tane"],
+  ["sundaysfood","food","tane"],
+  ["Sunday Bake Shop","sweets","tane"],
+  ["SUNPEDAL（サンペダル）","goods","tane"],
+  ["csew","goods","tane"],
+  ["自然派料理店　糧","food","tane"],
+  ["チェスト","goods","tane"],
+  ["月とピエロ","goods","tane"],
+  ["Tearoom Alpes","drink","tane"],
+  ["nai","goods","tane"],
+  ["パーラー江古田","food","tane"],
+  ["Patisserie RaRe","sweets","tane"],
+  ["パン屋 塩見","food","tane"],
+  ["Bèe","goods","tane"],
+  ["ひのめ","goods","tane"],
+  ["Peg","goods","tane"],
+  ["boat","goods","tane"],
+  ["薪火野","food","tane"],
+  ["MUBE","goods","tane"],
+  ["湯宿 蒸気家 feat. Yusuke Kashima","goods","tane"],
+  ["ラ・ブーランジェリー・ド・ハリマヤ","food","tane"],
+  ["Ryohei Takamatsu","art","tane"],
+  ["ワイン食堂トキワ","drink","tane"],
+  ["wineshop flow","drink","tane"],
+
+  ["Chè 333","sweets","center-gai"],
+  ["MMF／影響亜細亜 Culture Shop","goods","center-gai"],
+  ["OM sabaisabai／影響亜細亜 Culture Shop","goods","center-gai"],
+  ["QUIET SPACE TOOL & FURNITURE／影響亜細亜 Culture Shop","goods","center-gai"],
+  ["DIGAWEL／影響亜細亜 Culture Shop","goods","center-gai"],
+  ["24PILLARS／影響亜細亜 Culture Shop","goods","center-gai"],
+  ["TOKYO CULTUART by BEAMS／影響亜細亜","goods","center-gai"],
+  ["Highway（南国灰道倶楽部）／影響亜細亜 Culture Shop","goods","center-gai"],
+  ["BE A GOOD NEIGHBOR COFFEE KIOSK／影響亜細亜 Culture Shop","drink","center-gai"],
+
+  ["農・豊・賛／nopposan","food","kaigan5"],
+  ["森道結婚式＆海岸美容院","goods","kaigan5"],
+
+  ["affordance + Onawa","goods","kaigan3"],
+  ["SNOW SHOVELING [Caravan]","goods","kaigan3"],
+
+  ["TORAYA EQUIPMENT","goods","kaigan2"],
+
+  ["O2","goods","yuenchi-market"],
+
+  ["oyatsupokke／モリミチ喫茶室","food","yuenchi-market2"],
+  ["space／モリミチ喫茶室","drink","yuenchi-market2"],
+  ["deli＆tea käwäsemi／モリミチ喫茶室","drink","yuenchi-market2"],
+  ["ヒトトキ -人と木-／モリミチ喫茶室","drink","yuenchi-market2"],
+  ["Felt coffee／モリミチ喫茶室","drink","yuenchi-market2"],
+  ["uneclef／モリミチ喫茶室","drink","yuenchi-market2"],
+
+  ["Nowhereman","goods","shibafu"],
+  ["Méton","goods","shibafu"],
+  ["ゆとなみ社","goods","shibafu"],
+  ["和歌山酒場","drink","shibafu"]
 
 ];
 
@@ -587,16 +801,23 @@ const CAT = {
 const ZONE_BY_ID = {};
 ZONES.forEach(z => ZONE_BY_ID[z.id] = z);
 
-const ARTISTS = ARTIST_NAMES.map((name, i) => ({ id: 'a' + i, name }));
+const ARTISTS = ARTIST_DATA.map((a, i) => ({
+  id: 'a' + i, name: a.name, days: a.days || []
+}));
 
 const SHOPS = SHOP_DATA.map((s, i) => {
   const [name, cat, zone, x, y, w, h, booth] = s;
   const z = ZONE_BY_ID[zone];
+  const c = CAT[cat] || { label: '', icon: '🛍️' };
+  /* hasMapPos … 公式マップPDFの座標を持つ店か。座標なしの追加店は
+     マップのハイライト・ピン処理から除外する（falseならマップ非対応）。 */
+  const hasMapPos = typeof x === 'number' && x > 0;
   return {
     id: 's' + i, name, cat,
-    catLabel: CAT[cat].label, catIcon: CAT[cat].icon,
+    catLabel: c.label, catIcon: c.icon,
     zone, zoneName: z ? z.name : '',
     booth: booth || null,              // 公式マップのブース番号
+    hasMapPos,
     mx: x, my: y, mw: w, mh: h         // マップ上の店名ハイライト矩形（%）
   };
 });
@@ -665,6 +886,7 @@ const ZONE_VENUE = {
    ショップ選択時、そのエリアをマップ上で色付きハイライトするのに使う。 */
 const ZONE_BOX = {};
 SHOPS.forEach(s => {
+  if (!s.hasMapPos) return;            // 座標なしの追加店は外接矩形に含めない
   const b = ZONE_BOX[s.zone] ||
     (ZONE_BOX[s.zone] = { x0: 100, y0: 100, x1: 0, y1: 0 });
   b.x0 = Math.min(b.x0, s.mx);
