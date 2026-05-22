@@ -786,7 +786,21 @@ const SHOP_DATA = [
   ["Nowhereman","goods","shibafu"],
   ["Méton","goods","shibafu"],
   ["ゆとなみ社","goods","shibafu"],
-  ["和歌山酒場","drink","shibafu"]
+  ["和歌山酒場","drink","shibafu"],
+
+  /* VENTURE ONWARD by Purveyors の未掲載分（公式 /area/ 再照合で判明） */
+  ["アトリエブルーボトル","goods","venture"],
+  ["稲とアガベ","drink","venture"],
+  ["ココ・ファーム・ワイナリー","drink","venture"],
+  ["一二","goods","venture"],
+  ["Purveyors","goods","venture"],
+  ["Hi Hi Hi","goods","venture"],
+  ["ぷくぷく醸造","drink","venture"],
+  ["芙蓉酒造","drink","venture"],
+  ["PLusBeat-月のうらがわ-","goods","venture"],
+  ["BRING","goods","venture"],
+  ["mörk","sweets","venture"],
+  ["WONDER WORKS","goods","venture"]
 
 ];
 
