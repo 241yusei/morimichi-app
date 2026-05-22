@@ -13,10 +13,11 @@
     placingMe: false,
     mapShopQuery: '',
     artistQuery: '', artistDay: 'all',
-    shopQuery: '', shopZone: 'all',
+    shopQuery: '', shopZone: 'all', shopCat: 'all',
     myplanTab: 'artists',
     fav: load('mm2026_fav', { artists: [], shops: [] }),
     checks: load('mm2026_checks', {}),
+    visited: load('mm2026_visited', []),
     mePin: load('mm2026_me', null),
     recent: load('mm2026_recent', { shops: [], artists: [] }),
     night: initNight()
@@ -56,6 +57,7 @@
     const r = state.recent;
     if (!r || typeof r !== 'object' || !Array.isArray(r.shops) || !Array.isArray(r.artists))
       state.recent = { shops: [], artists: [] };
+    if (!Array.isArray(state.visited)) state.visited = [];
   }
   function saveFav() { save('mm2026_fav', state.fav); }
   function isFav(t, id) { return state.fav[t].indexOf(id) !== -1; }
@@ -63,6 +65,14 @@
     const a = state.fav[t], i = a.indexOf(id);
     if (i === -1) { a.push(id); return true; }
     a.splice(i, 1); return false;
+  }
+  /* 訪問スタンプ：「行った出店」を記録する。fav（行きたい）とは独立。 */
+  function saveVisited() { save('mm2026_visited', state.visited); }
+  function isVisited(id) { return state.visited.indexOf(id) !== -1; }
+  function toggleVisited(id) {
+    const i = state.visited.indexOf(id);
+    if (i === -1) { state.visited.push(id); return true; }
+    state.visited.splice(i, 1); return false;
   }
   /* 'YYYY-MM-DD' + 'HH:MM' をローカル時刻の Date に（iOS Safari 互換のため
      文字列パースに頼らず数値引数で生成する） */
@@ -1144,6 +1154,18 @@
       chips.appendChild(ch);
     });
     root.appendChild(chips);
+    /* カテゴリフィルタ（第2軸）。エリアチップとAND条件で絞り込む。
+       項目は CAT 定義（food/drink/sweets/goods/art）からアイコンつきで生成。 */
+    const catChips = el('div', 'chips');
+    [['all', 'すべて']].concat(
+      Object.keys(CAT).map(k => [k, CAT[k].icon + ' ' + CAT[k].label])
+    ).forEach(c => {
+      const ch = el('button',
+        'chip' + (c[0] === state.shopCat ? ' active' : ''), c[1]);
+      ch.onclick = () => { state.shopCat = c[0]; renderShops(); };
+      catChips.appendChild(ch);
+    });
+    root.appendChild(catChips);
     root.appendChild(el('div', 'notice',
       'ℹ️ 出店をタップ →「マップで見る」で、店名・出店一覧のエリア名・中央地図上のエリアの場所をマーキングします。' +
       '公式では1000店舗以上が出店。全店舗は <a href="' + FESTIVAL.links.market +
@@ -1155,6 +1177,7 @@
   function shopTile(s) {
     const t = el('div', 'tile',
       `<div class="tile__cat">${s.catIcon}</div>
+       ${isVisited(s.id) ? '<div class="tile__visited">✅ 行った</div>' : ''}
        <div class="tile__name">${esc(s.name)}</div>
        <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
        <button class="tile__fav" aria-label="お気に入り">${
@@ -1171,7 +1194,8 @@
     const w = $('#shopListWrap'); if (!w) return;
     const nq = normKey(state.shopQuery);
     const zoneOk = s => state.shopZone === 'all' || s.zone === state.shopZone;
-    let list = SHOPS.filter(zoneOk);
+    const catOk = s => state.shopCat === 'all' || s.cat === state.shopCat;
+    let list = SHOPS.filter(s => zoneOk(s) && catOk(s));
     if (nq) list = list.filter(s => s.nk.indexOf(nq) !== -1);
     w.innerHTML = '';
     /* エリア選択中は、そのエリアをマップで見る導線を最上部に出す。
@@ -1195,7 +1219,7 @@
     if (!nq) {
       const rec = state.recent.shops
         .map(id => SHOPS.find(s => s.id === id))
-        .filter(s => s && zoneOk(s));
+        .filter(s => s && zoneOk(s) && catOk(s));
       if (rec.length) {
         w.appendChild(el('div', 'list-count', '最近チェックした出店'));
         const rg = el('div', 'list-grid');
@@ -1209,9 +1233,10 @@
       w.appendChild(el('div', 'list-count', list.length + ' 店'));
     }
     if (!list.length) {
-      w.appendChild(el('div', 'empty',
-        '<div class="big">🔍</div>「' + esc(state.shopQuery.trim()) +
-        '」に一致する出店はありません'));
+      w.appendChild(el('div', 'empty', nq
+        ? '<div class="big">🔍</div>「' + esc(state.shopQuery.trim()) +
+          '」に一致する出店はありません'
+        : '<div class="big">🛍️</div>この条件に合う出店はありません'));
       return;
     }
     const g = el('div', 'list-grid');
@@ -1265,6 +1290,12 @@
       root.appendChild(g);
     } else {
       const favs = SHOPS.filter(s => isFav('shops', s.id));
+      /* 訪問スタンプ数。お気に入りが無くても表示する。 */
+      const visitedCount = SHOPS.filter(s => isVisited(s.id)).length;
+      if (visitedCount) {
+        root.appendChild(el('div', 'visit-count',
+          '✅ 訪問した出店：' + visitedCount + ' 店'));
+      }
       if (!favs.length) {
         root.appendChild(el('div', 'empty',
           '<div class="big">🛍️</div>行きたい出店を登録すると<br>ここに一覧表示されます'));
@@ -1283,6 +1314,7 @@
       favs.forEach(s => {
         const t = el('div', 'tile',
           `<div class="tile__cat">${s.catIcon}</div>
+           ${isVisited(s.id) ? '<div class="tile__visited">✅ 行った</div>' : ''}
            <div class="tile__name">${esc(s.name)}</div>
            <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
            <button class="tile__fav">★</button>`);
@@ -1367,6 +1399,7 @@
     const s = SHOPS.find(x => x.id === id); if (!s) return;
     pushRecent('shops', s.id);
     const faved = isFav('shops', s.id);
+    const went = isVisited(s.id);
     openModal(
       `<div class="modal__handle"></div>
        <div class="modal__cat">${s.catIcon}</div>
@@ -1386,12 +1419,20 @@
              esc(shortName(s.zoneName)) + '」エリアの案内・公式マップでご確認ください。'}</p>
        <div class="modal__btns">
          <button class="btn btn--fav ${faved ? 'on' : ''}" id="sFav">
-           ${faved ? '★ 登録済み' : '☆ マイプランに追加'}</button></div>
+           ${faved ? '★ 行きたい' : '☆ 行きたい'}</button>
+         <button class="btn btn--visit ${went ? 'on' : ''}" id="sVisit">
+           ${went ? '✅ 行った' : '⬜ 行った'}</button></div>
        ${s.hasMapPos ? `<div class="modal__btns">
          <button class="btn btn--primary" id="sMap">🗺️ マップで店名・エリアを見る</button></div>` : ''}`);
     $('#sFav').onclick = () => {
       toast(toggleFav('shops', s.id) ? '★ マイプランに追加' : 'マイプランから削除');
       saveFav(); openShop(id); updateTabBadge();
+      if (state.view === 'shops') renderShopList();
+      if (state.view === 'myplan') renderMyplan();
+    };
+    $('#sVisit').onclick = () => {
+      toast(toggleVisited(s.id) ? '✅ 訪問済みにしました' : '訪問済みを取り消しました');
+      saveVisited(); openShop(id);
       if (state.view === 'shops') renderShopList();
       if (state.view === 'myplan') renderMyplan();
     };
