@@ -10,14 +10,12 @@
     selectedZone: null,
     highlightShop: null,   // マップ上でハイライト中のショップID
     planMode: false,       // マイプランの出店をまとめてマップ表示
-    placingMe: false,
     mapShopQuery: '',
     artistQuery: '', artistDay: 'all',
     shopQuery: '', shopZone: 'all',
     myplanTab: 'artists',
     fav: load('mm2026_fav', { artists: [], shops: [] }),
     checks: load('mm2026_checks', {}),
-    mePin: load('mm2026_me', null),
     recent: load('mm2026_recent', { shops: [], artists: [] }),
     night: initNight()
   };
@@ -50,9 +48,6 @@
       state.fav = { artists: [], shops: [] };
     if (!state.checks || typeof state.checks !== 'object' || Array.isArray(state.checks))
       state.checks = {};
-    const m = state.mePin;
-    if (!m || typeof m.x !== 'number' || typeof m.y !== 'number' ||
-        isNaN(m.x) || isNaN(m.y)) state.mePin = null;
     const r = state.recent;
     if (!r || typeof r !== 'object' || !Array.isArray(r.shops) || !Array.isArray(r.artists))
       state.recent = { shops: [], artists: [] };
@@ -389,20 +384,6 @@
     input.oninput = e => { state.mapShopQuery = e.target.value; renderMapSug(); };
     input.onfocus = () => { if (!state.mapShopQuery.trim()) renderMapSug(); };
 
-    /* ツールバー：現在地セットボタン（ステージ・入口のピンは廃止して
-       マップを見やすくした。ステージ名・ゲートは会場マップ画像に印字済み） */
-    const tb = el('div', 'map-toolbar');
-    const meBtn = el('button', 'me-btn' + (state.placingMe ? ' active' : ''),
-      state.placingMe ? '📍 マップをタップして現在地を指定'
-                      : '🧭 現在地をマップに登録');
-    meBtn.onclick = () => {
-      state.placingMe = !state.placingMe;
-      toast(state.placingMe ? 'マップをタップして現在地をセット' : '現在地モード解除');
-      renderMap();
-    };
-    tb.appendChild(meBtn);
-    root.appendChild(tb);
-
     /* マイプラン動線表示中バナー（行きたい出店が0件なら通常表示に戻す） */
     if (state.planMode && !SHOPS.some(s => isFav('shops', s.id))) {
       state.planMode = false;
@@ -546,13 +527,6 @@
         ? SHOPS.find(x => x.id === state.highlightShop) : null);
       /* ステージ・入口のピンは廃止（会場マップ画像に名称が印字済みで、
          ピンが多いと地図が見づらくなるため）。 */
-      if (state.mePin) {
-        const p = el('div', 'pin pin--me',
-          `<div class="pin__dot"><span>🙋</span></div>
-           <div class="pin__label">現在地</div>`);
-        p.dataset.zx = state.mePin.x; p.dataset.zy = state.mePin.y;
-        layer.appendChild(p);
-      }
       /* マイプラン：行きたい出店をエリアごとにピン表示（動線設計用） */
       if (state.planMode) {
         const byZone = {};
@@ -695,17 +669,6 @@
       if (moved) { moved = false; return; }
       const r = canvas.getBoundingClientRect();
       const cx = e.clientX - r.left, cy = e.clientY - r.top;
-      if (state.placingMe) {
-        const zx = (cx - mv.x) / mv.scale / mv.innerW * 100;
-        const zy = (cy - mv.y) / mv.scale / mv.innerH * 100;
-        state.mePin = { x: Math.max(0, Math.min(100, zx)),
-                        y: Math.max(0, Math.min(100, zy)) };
-        save('mm2026_me', state.mePin);
-        state.placingMe = false;
-        toast('現在地をセットしました');
-        renderMap();
-        return;
-      }
       const now = Date.now();
       if (now - lastTap < 300) zoomAt(cx, cy, mv.scale > 1.5 ? 0.45 : 2.4);
       lastTap = now;

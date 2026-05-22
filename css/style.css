@@ -249,14 +249,6 @@ main{
 .list-count{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:8px;}
 
 /* ---------- マップ ---------- */
-.map-toolbar{display:flex;margin-bottom:10px;}
-.me-btn{
-  flex:1;border:2.5px solid var(--ink);border-radius:9px;
-  background:var(--card);box-shadow:var(--hard);
-  padding:10px 12px;font-size:12.5px;font-weight:800;color:var(--ink);
-}
-.me-btn.active{background:var(--teal);color:#fff;}
-.me-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
 .map-wrap{
   border:3px solid var(--ink);border-radius:12px;box-shadow:var(--hard);
   overflow:hidden;background:var(--card);position:relative;
@@ -283,7 +275,6 @@ main{
   box-shadow:1px 1px 0 rgba(0,0,0,.35);
 }
 .pin__dot span{transform:rotate(-45deg);font-size:10px;}
-.pin--me .pin__dot{background:#fff;border-color:var(--red);}
 .pin__label{
   margin-top:2px;font-size:9.5px;font-weight:800;background:var(--card);
   border:1.5px solid var(--ink);border-radius:4px;padding:1px 5px;
