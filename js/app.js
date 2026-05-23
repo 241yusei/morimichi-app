@@ -163,6 +163,146 @@
       .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
       .replace(/[　\s・･.,，、。\-‐-―ー~〜＆]/g, '');
   }
+
+  /* ローマ字（ヘボン式・訓令式の主要パターン）→ひらがな簡易変換。
+     英語名の店・アーティストを「ミナペルホネン」「みなぺるほねん」など
+     カナで検索した時、normKey 同士の includes でぼんやり一致させるための
+     補助キーを作る目的。完璧な変換は目指さず、主要50音＋濁音半濁音＋
+     拗音＋促音＋撥音をカバーする。
+     入力は normKey 通過後（lowercase / 記号除去済み）の文字列を想定。 */
+  var ROMA_TABLE = [
+    // 長い順に並べる（拗音・3字節を先にマッチさせる）
+    ['kkya','っきゃ'],['kkyu','っきゅ'],['kkyo','っきょ'],
+    ['ssha','っしゃ'],['sshu','っしゅ'],['ssho','っしょ'],['sshi','っし'],
+    ['ccha','っちゃ'],['cchu','っちゅ'],['ccho','っちょ'],['cchi','っち'],
+    ['ttsu','っつ'],['tsu','つ'],['tta','った'],['tte','って'],['tto','っと'],['tti','っち'],
+    ['nnya','んにゃ'],['nnyu','んにゅ'],['nnyo','んにょ'],
+    ['ppya','っぴゃ'],['ppyu','っぴゅ'],['ppyo','っぴょ'],
+    ['kya','きゃ'],['kyu','きゅ'],['kyo','きょ'],['kyi','きぃ'],['kye','きぇ'],
+    ['gya','ぎゃ'],['gyu','ぎゅ'],['gyo','ぎょ'],
+    ['sha','しゃ'],['shu','しゅ'],['sho','しょ'],['she','しぇ'],['shi','し'],
+    ['sya','しゃ'],['syu','しゅ'],['syo','しょ'],
+    ['cha','ちゃ'],['chu','ちゅ'],['cho','ちょ'],['che','ちぇ'],['chi','ち'],
+    ['tya','ちゃ'],['tyu','ちゅ'],['tyo','ちょ'],
+    ['tha','てぁ'],['thi','てぃ'],['thu','てゅ'],['the','てぇ'],['tho','てょ'],
+    ['nya','にゃ'],['nyu','にゅ'],['nyo','にょ'],
+    ['hya','ひゃ'],['hyu','ひゅ'],['hyo','ひょ'],
+    ['mya','みゃ'],['myu','みゅ'],['myo','みょ'],
+    ['rya','りゃ'],['ryu','りゅ'],['ryo','りょ'],
+    ['bya','びゃ'],['byu','びゅ'],['byo','びょ'],
+    ['pya','ぴゃ'],['pyu','ぴゅ'],['pyo','ぴょ'],
+    ['ja','じゃ'],['ju','じゅ'],['jo','じょ'],['je','じぇ'],['ji','じ'],
+    ['jya','じゃ'],['jyu','じゅ'],['jyo','じょ'],
+    ['zya','じゃ'],['zyu','じゅ'],['zyo','じょ'],
+    ['dya','ぢゃ'],['dyu','ぢゅ'],['dyo','ぢょ'],
+    ['fa','ふぁ'],['fi','ふぃ'],['fe','ふぇ'],['fo','ふぉ'],['fu','ふ'],['hu','ふ'],
+    ['va','ヴぁ'],['vi','ヴぃ'],['vu','ヴ'],['ve','ヴぇ'],['vo','ヴぉ'],
+    ['wa','わ'],['wi','うぃ'],['we','うぇ'],['wo','を'],['wu','う'],
+    ['xa','ぁ'],['xi','ぃ'],['xu','ぅ'],['xe','ぇ'],['xo','ぉ'],
+    ['ka','か'],['ki','き'],['ku','く'],['ke','け'],['ko','こ'],
+    ['ga','が'],['gi','ぎ'],['gu','ぐ'],['ge','げ'],['go','ご'],
+    ['sa','さ'],['si','し'],['su','す'],['se','せ'],['so','そ'],
+    ['za','ざ'],['zi','じ'],['zu','ず'],['ze','ぜ'],['zo','ぞ'],
+    ['ta','た'],['ti','ち'],['te','て'],['to','と'],
+    ['da','だ'],['di','ぢ'],['du','づ'],['de','で'],['do','ど'],
+    ['na','な'],['ni','に'],['nu','ぬ'],['ne','ね'],['no','の'],
+    ['ha','は'],['hi','ひ'],['he','へ'],['ho','ほ'],
+    ['ba','ば'],['bi','び'],['bu','ぶ'],['be','べ'],['bo','ぼ'],
+    ['pa','ぱ'],['pi','ぴ'],['pu','ぷ'],['pe','ぺ'],['po','ぽ'],
+    ['ma','ま'],['mi','み'],['mu','む'],['me','め'],['mo','も'],
+    ['ya','や'],['yu','ゆ'],['yo','よ'],['yi','い'],['ye','いぇ'],
+    ['ra','ら'],['ri','り'],['ru','る'],['re','れ'],['ro','ろ'],
+    ['la','ら'],['li','り'],['lu','る'],['le','れ'],['lo','ろ'],
+    ['a','あ'],['i','い'],['u','う'],['e','え'],['o','お'],
+    ['n','ん']
+  ];
+  function romajiToKana(s) {
+    if (!s) return '';
+    /* 既に英字を含まない（=カナ/漢字のみ）なら変換不要 */
+    if (!/[a-z]/.test(s)) return s;
+    var src = s;
+    var out = '';
+    var i = 0;
+    while (i < src.length) {
+      var c = src.charAt(i);
+      if (c < 'a' || c > 'z') {
+        out += c;
+        i++;
+        continue;
+      }
+      /* 二重子音→促音（kk,ss,tt,pp,ll,mm,gg,bb,dd,ff,jj,rr,zz） */
+      if (i + 1 < src.length && c === src.charAt(i + 1) &&
+          'kstpgbdfjrlzm'.indexOf(c) !== -1 && c !== 'n') {
+        /* 「ll」「mm」「rr」も実用上は促音化しない方が良いケースがあるが、
+           includes 判定の上で誤検出より見落としを避ける */
+        out += 'っ';
+        i++;
+        continue;
+      }
+      var matched = false;
+      for (var k = 0; k < ROMA_TABLE.length; k++) {
+        var pat = ROMA_TABLE[k][0];
+        if (src.substr(i, pat.length) === pat) {
+          /* 'n' は次が母音や y のときは「な行/にゃ行」になるので
+             ROMA_TABLE の上位で吸収済み。それ以外は「ん」 */
+          out += ROMA_TABLE[k][1];
+          i += pat.length;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        /* 未知の英字は素通し（数字や記号など。normKey で多くは落ちている） */
+        out += c;
+        i++;
+      }
+    }
+    /* normKey を通して長音記号などを統一 */
+    return normKey(out);
+  }
+
+  /* レコード（店・アーティスト）の検索用キーをまとめて作る。
+     - nk      : 名前の normKey
+     - nkRoma  : 名前を romajiToKana 経由で normKey した結果（英名→カナ仮想）
+     - aliasNk : aliases 配列（任意）を normKey した文字列の連結
+     - aliasRoma: aliases を romajiToKana したものの連結（通常カナだが念のため） */
+  function buildSearchKeys(name, aliases) {
+    var nk = normKey(name);
+    var nkRoma = romajiToKana(nk);
+    var aliasNk = '';
+    var aliasRoma = '';
+    if (Array.isArray(aliases)) {
+      for (var i = 0; i < aliases.length; i++) {
+        var a = aliases[i];
+        if (!a) continue;
+        var an = normKey(a);
+        aliasNk += '' + an;
+        aliasRoma += '' + romajiToKana(an);
+      }
+    }
+    return { nk: nk, nkRoma: nkRoma, aliasNk: aliasNk, aliasRoma: aliasRoma };
+  }
+
+  /* 検索クエリ nq とレコードのキー群でマッチ判定。
+     - クエリと名前の正規化キー双方を「そのまま」「ローマ字→カナ変換後」両方で
+       includes 比較し、いずれかが一致したらヒット。
+     - 単方向ではなく双方向にすることで、英名→カナ・カナ→英名のどちらの
+       入力でも掛かる（カナ→英名はカナのまま英字にはならないが、
+       レコード名のローマ字→カナ展開で吸収できる）。 */
+  function matchKey(nq, keys) {
+    if (!nq) return true;
+    if (!keys) return false;
+    var nqRoma = romajiToKana(nq);
+    if (keys.nk && keys.nk.indexOf(nq) !== -1) return true;
+    if (keys.nkRoma && keys.nkRoma.indexOf(nq) !== -1) return true;
+    if (nqRoma && keys.nk && keys.nk.indexOf(nqRoma) !== -1) return true;
+    if (nqRoma && keys.nkRoma && keys.nkRoma.indexOf(nqRoma) !== -1) return true;
+    if (keys.aliasNk && keys.aliasNk.indexOf(nq) !== -1) return true;
+    if (keys.aliasRoma && keys.aliasRoma.indexOf(nq) !== -1) return true;
+    if (nqRoma && keys.aliasNk && keys.aliasNk.indexOf(nqRoma) !== -1) return true;
+    if (nqRoma && keys.aliasRoma && keys.aliasRoma.indexOf(nqRoma) !== -1) return true;
+    return false;
+  }
   function debounce(fn, ms) {
     let t;
     return function () {
@@ -463,7 +603,7 @@
       if (!list.length) return;
       box.appendChild(el('div', 'map-sug__head', '最近チェックした出店'));
     } else {
-      list = SHOPS.filter(s => s.hasMapPos && dayOk(s) && s.nk.indexOf(nq) !== -1).slice(0, 10);
+      list = SHOPS.filter(s => s.hasMapPos && dayOk(s) && matchKey(nq, s)).slice(0, 10);
     }
     list.forEach(s => {
       const r = el('div', 'map-sug__item',
@@ -1057,7 +1197,7 @@
     const nq = normKey(state.artistQuery);
     const dayOk = a => state.artistDay === 'all' ||
       (a.days && a.days.indexOf(state.artistDay) !== -1);
-    let list = ARTISTS.filter(a => (!nq || a.nk.indexOf(nq) !== -1) && dayOk(a));
+    let list = ARTISTS.filter(a => (!nq || matchKey(nq, a)) && dayOk(a));
     w.innerHTML = '';
     if (!nq) {
       const rec = state.recent.artists
@@ -1158,7 +1298,7 @@
        それ以外は shopOpenOn を使い、days 未指定（=全日）の店も通す。 */
     const dayOk = s => state.shopDay === 'all' || shopOpenOn(s, state.shopDay);
     let list = SHOPS.filter(s => zoneOk(s) && dayOk(s));
-    if (nq) list = list.filter(s => s.nk.indexOf(nq) !== -1);
+    if (nq) list = list.filter(s => matchKey(nq, s));
     w.innerHTML = '';
     /* エリア選択中は、そのエリアをマップで見る導線を最上部に出す。
        座標を持たないエリア（公式照合で追加）はマップ表示できないため出さない。 */
@@ -1477,9 +1617,19 @@
   function init() {
     sanitizeState();
     /* 検索用キーを事前計算（毎キーストロークの再計算を避ける）。
+       nk … 名前の正規化キー（既存互換）
+       nkRoma / aliasNk / aliasRoma … 英⇄カナ相互検索用の補助キー。
        アーティストは50音順にソートしておく。 */
-    SHOPS.forEach(s => { s.nk = normKey(s.name); });
-    ARTISTS.forEach(a => { a.nk = normKey(a.name); });
+    SHOPS.forEach(s => {
+      var k = buildSearchKeys(s.name, s.aliases);
+      s.nk = k.nk; s.nkRoma = k.nkRoma;
+      s.aliasNk = k.aliasNk; s.aliasRoma = k.aliasRoma;
+    });
+    ARTISTS.forEach(a => {
+      var k = buildSearchKeys(a.name, a.aliases);
+      a.nk = k.nk; a.nkRoma = k.nkRoma;
+      a.aliasNk = k.aliasNk; a.aliasRoma = k.aliasRoma;
+    });
     ARTISTS.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
     applyNight();
