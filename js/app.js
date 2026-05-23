@@ -1319,6 +1319,79 @@
     modalLastFocus = null;
   }
 
+  /* ============================================================
+     初回お礼ポップアップ（森道2026 終了後の感謝とアフターパーティー誘導）
+  ============================================================ */
+  function showThanksPopupIfFirst() {
+    let seen = '';
+    try { seen = localStorage.getItem('mm2026_thanks_seen') || ''; } catch (e) {}
+    if (seen === '1') return;
+
+    const formUrl =
+      'https://docs.google.com/forms/d/e/1FAIpQLSfGdWdr7QFt6fmrM8B0D6227ISCFi5RoGPjkXplnyc9Bcb-0Q/viewform';
+    const apartyUrl = 'https://nagoya-ningen.github.io/morimichi-afterparty/';
+
+    const html =
+      '<div class="thanks-popup">' +
+        '<h2 class="thanks-popup__title">森、道、市場2026、お疲れさまでした。</h2>' +
+        '<div class="thanks-popup__body">' +
+          '<p>森道ガイドアプリ、使ってくれてありがとうございました。' +
+          'もともとは自分一人のために作ったものだったので、' +
+          '実際に誰かの役に立てていたら、それだけでうれしいです。</p>' +
+          '<p>ひとつだけ、お願いがあります。よかったら、' +
+          'アプリの感想を聞かせてもらえませんか。' +
+          '良かったところも、使いにくかったところも、どちらも知りたいです。' +
+          '来年のアプリづくりに活かしたいんです。</p>' +
+          '<p>感想は、下のボタンから3分ほどで送れます。' +
+          'お名前はニックネームでも、適当でも大丈夫です。気軽に書いてください。</p>' +
+          '<p>それから、3日間が終わったあとの場所として' +
+          '「森道アフターパーティー」という別のアプリも開いています。' +
+          '森道で「最高だった」と感じた瞬間を、ひとことだけ書き残せる場所です。' +
+          'アーティスト、店舗、エリア、なんでも。' +
+          'あなたの3日間を、テキストでもう一度なぞるみたいに、' +
+          'よければ書いていってください。</p>' +
+          '<p>それでは、また。来年の森道も、一緒にたのしみましょうね。</p>' +
+        '</div>' +
+        '<div class="thanks-popup__actions">' +
+          '<a class="thanks-popup__btn thanks-popup__btn--primary" ' +
+            'id="thanksFormBtn" href="' + formUrl + '" ' +
+            'target="_blank" rel="noopener">感想フォームを開く</a>' +
+          '<a class="thanks-popup__btn thanks-popup__btn--ghost" ' +
+            'id="thanksApartyBtn" href="' + apartyUrl + '" ' +
+            'target="_blank" rel="noopener">森道アフターパーティーを開く</a>' +
+          '<button class="thanks-popup__btn thanks-popup__btn--close" ' +
+            'id="thanksCloseBtn" type="button">閉じる</button>' +
+        '</div>' +
+      '</div>';
+
+    openModal(html);
+
+    /* どのルートで閉じても／どのリンクを踏んでも「見た」フラグを保存して
+       再表示を抑止する。背景クリック・Escape・popstate も MutationObserver で拾う。 */
+    function markSeen() {
+      try { localStorage.setItem('mm2026_thanks_seen', '1'); } catch (e) {}
+    }
+    const formBtn = document.getElementById('thanksFormBtn');
+    const apartyBtn = document.getElementById('thanksApartyBtn');
+    const closeBtn = document.getElementById('thanksCloseBtn');
+    if (formBtn) formBtn.addEventListener('click', markSeen);
+    if (apartyBtn) apartyBtn.addEventListener('click', markSeen);
+    if (closeBtn) closeBtn.addEventListener('click', () => {
+      markSeen();
+      closeModal();
+    });
+    const bg = document.getElementById('modalBg');
+    if (bg && typeof MutationObserver !== 'undefined') {
+      const obs = new MutationObserver(() => {
+        if (!bg.classList.contains('open')) {
+          markSeen();
+          obs.disconnect();
+        }
+      });
+      obs.observe(bg, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
   function openArtist(id) {
     const a = ARTISTS.find(x => x.id === id); if (!a) return;
     pushRecent('artists', a.id);
@@ -1434,6 +1507,8 @@
     });
     switchView('home');
     updateTabBadge();
+    /* 初期描画が落ち着いてからお礼ポップアップを評価（一度きり表示） */
+    setTimeout(showThanksPopupIfFirst, 300);
   }
   document.addEventListener('DOMContentLoaded', init);
 })();
