@@ -413,7 +413,7 @@
      ['⭐', 'マイプラン', () => switchView('myplan')],
      ['🚌', 'アクセス', () => jump('accessCard')],
      ['☔', '天気', () => openUrl(FESTIVAL.weather)],
-     ['🎫', 'チケット', () => openUrl(FESTIVAL.links.ticket)]
+     ['🪩', 'アフターパーティ', () => openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/')]
     ].forEach(q => {
       const b = el('button', 'quick-btn',
         `<div class="ico">${q[0]}</div><div class="lbl">${q[1]}</div>`);
