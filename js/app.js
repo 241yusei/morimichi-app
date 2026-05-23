@@ -13,6 +13,10 @@
     mapShopQuery: '',
     artistQuery: '', artistDay: 'all',
     shopQuery: '', shopZone: 'all',
+    /* 出店ショップの出店日フィルタ。'all'=全日。d1/d2/d3=その日に出店する店のみ。
+       同一ブース番号で日替わりに店舗が入れ替わる出店（種と旅と・モリミチ喫茶室・
+       ウキウキ通り 18-20 など）を正しく絞り込むために必須。 */
+    shopDay: 'all',
     myplanTab: 'artists',
     fav: load('mm2026_fav', { artists: [], shops: [] }),
     checks: load('mm2026_checks', {}),
@@ -447,17 +451,19 @@
     const nq = normKey(state.mapShopQuery);
     box.innerHTML = '';
     let list, isRecent = false;
-    /* マップ検索は座標を持つ店のみ対象（追加店はマップ上に位置が無い） */
+    /* マップ検索は座標を持つ店のみ対象（追加店はマップ上に位置が無い）。
+       出店日フィルタ（shopDay）も適用し、選んだ日に出店しない店は除外。 */
+    const dayOk = s => state.shopDay === 'all' || shopOpenOn(s, state.shopDay);
     if (!nq) {
       /* 未入力時は最近チェックした出店を提示 */
       list = state.recent.shops
         .map(id => SHOPS.find(s => s.id === id))
-        .filter(s => s && s.hasMapPos).slice(0, 6);
+        .filter(s => s && s.hasMapPos && dayOk(s)).slice(0, 6);
       isRecent = true;
       if (!list.length) return;
       box.appendChild(el('div', 'map-sug__head', '最近チェックした出店'));
     } else {
-      list = SHOPS.filter(s => s.hasMapPos && s.nk.indexOf(nq) !== -1).slice(0, 10);
+      list = SHOPS.filter(s => s.hasMapPos && dayOk(s) && s.nk.indexOf(nq) !== -1).slice(0, 10);
     }
     list.forEach(s => {
       const r = el('div', 'map-sug__item',
@@ -781,7 +787,9 @@
     if (!zp) return;
     if (!state.selectedZone) { zp.innerHTML = ''; return; }
     const z = ZONE_BY_ID[state.selectedZone];
-    const shops = SHOPS.filter(s => s.zone === z.id);
+    /* 出店日フィルタを適用（マップ側も shopDay を共有して整合させる） */
+    const dayOk = s => state.shopDay === 'all' || shopOpenOn(s, state.shopDay);
+    const shops = SHOPS.filter(s => s.zone === z.id && dayOk(s));
     const typeLabel = z.type === 'stage' ? 'ステージ' :
                       z.type === 'gate' ? '入退場ゲート' : '出店エリア';
     zp.innerHTML = `<div class="card zone-panel">
@@ -1093,6 +1101,18 @@
       state.shopQuery = e.target.value; shopSearch();
     };
     root.appendChild(sb);
+    /* 出店日フィルタ。日替わり出店（種と旅と・モリミチ喫茶室・ウキウキ通り 18-20 ほか）
+       を絞り込むため、検索・エリア絞り込みより手前に出す。 */
+    const dayChips = el('div', 'chips');
+    [['all', '全日']].concat(FESTIVAL.days.map(d =>
+      [d.id, d.label + '(' + ({FRI:'金',SAT:'土',SUN:'日'}[d.dow] || d.dow) + ')']
+    )).forEach(c => {
+      const ch = el('button',
+        'chip' + (c[0] === state.shopDay ? ' active' : ''), c[1]);
+      ch.onclick = () => { state.shopDay = c[0]; renderShops(); };
+      dayChips.appendChild(ch);
+    });
+    root.appendChild(dayChips);
     /* エリアフィルタ。すべて＋出店のある各エリアで絞り込む。
        マップのエリア括りと対応し、選択中はマップ表示への導線を出す。
        出店ゼロのエリア（のんのんパレード等）はチップに出さない。 */
@@ -1134,7 +1154,10 @@
     const w = $('#shopListWrap'); if (!w) return;
     const nq = normKey(state.shopQuery);
     const zoneOk = s => state.shopZone === 'all' || s.zone === state.shopZone;
-    let list = SHOPS.filter(zoneOk);
+    /* 出店日フィルタ。state.shopDay が 'all' なら無条件で通す。
+       それ以外は shopOpenOn を使い、days 未指定（=全日）の店も通す。 */
+    const dayOk = s => state.shopDay === 'all' || shopOpenOn(s, state.shopDay);
+    let list = SHOPS.filter(s => zoneOk(s) && dayOk(s));
     if (nq) list = list.filter(s => s.nk.indexOf(nq) !== -1);
     w.innerHTML = '';
     /* エリア選択中は、そのエリアをマップで見る導線を最上部に出す。
@@ -1158,7 +1181,7 @@
     if (!nq) {
       const rec = state.recent.shops
         .map(id => SHOPS.find(s => s.id === id))
-        .filter(s => s && zoneOk(s));
+        .filter(s => s && zoneOk(s) && dayOk(s));
       if (rec.length) {
         w.appendChild(el('div', 'list-count', '最近チェックした出店'));
         const rg = el('div', 'list-grid');
@@ -1340,6 +1363,12 @@
        ${s.hasMapPos && s.booth ? `<div class="modal__row"><div class="ico">🔢</div><div>
          <div class="k">会場マップ ブース番号</div>
          <div class="v">${esc(shortName(s.zoneName))} ${s.booth}番</div></div></div>` : ''}
+       ${s.days ? `<div class="modal__row"><div class="ico">📅</div><div>
+         <div class="k">出店日</div>
+         <div class="v">${s.days.map(id => {
+           const d = FESTIVAL.days.find(x => x.id === id);
+           return d ? d.label + '(' + ({FRI:'金',SAT:'土',SUN:'日'}[d.dow] || d.dow) + ')' : id;
+         }).join('・')}のみ</div></div></div>` : ''}
        <p style="font-size:10.5px;color:var(--sub);margin:2px 4px 10px">${
          s.hasMapPos
            ? '「マップで見る」で、①出店一覧の店名（赤枠）②出店一覧のエリア名（赤丸）③そのエリアが会場マップ上のどこにあるか（📍ピン＋赤丸）の3点を表示します。' +

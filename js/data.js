@@ -240,16 +240,20 @@ const ARTIST_DATA = [
 ];
 
 /* 出店ショップ（公式マップPDF「出店一覧」掲載の全店・約420店）
-   形式: [店名, カテゴリ, エリアID, 店名X%, 店名Y%, 幅%, 高さ%, ブース番号]
+   形式: [店名, カテゴリ, エリアID, 店名X%, 店名Y%, 幅%, 高さ%, ブース番号, 出店日(任意)]
+   座標なし（追加店）形式: [店名, カテゴリ, エリアID]
+   座標なし＋日別: [店名, カテゴリ, エリアID, 出店日, 共有ブース番号(任意)]
    店名は公式サイトの出店一覧と照合。X/Y/幅/高さ＝公式マップPDFの
    「出店一覧」内の店名テキスト位置（正規化）。マップ上でこの店名を直接ハイライト。
-   ブース番号＝マーケット内の通し番号（会場マップの同番号ブースが目印）。 */
+   ブース番号＝マーケット内の通し番号（会場マップの同番号ブースが目印）。
+   出店日 … d1=5/22(金) / d2=5/23(土) / d3=5/24(日)。
+   未指定（または空配列）は全日出店扱い。 */
 const SHOP_DATA = [
   ["NORMAL","goods","liverary",1.53,3.14,3.87,0.57,1],
-  ["ZEZE","goods","liverary",1.53,3.67,5.44,0.57,2],
+  ["ZEZE","goods","liverary",1.53,3.67,5.44,0.57,2,["d2","d3"]],
   ["CHOWCHOW","goods","liverary",1.53,4.21,11.66,0.57,3],
   ["City Dining Macy's","food","liverary",1.53,4.74,6.57,0.57,4],
-  ["カロリー軒","goods","liverary",1.53,5.27,5.92,0.57,5],
+  ["カロリー軒","goods","liverary",1.53,5.27,5.92,0.57,5,["d1"]],
   ["ひねもすのたりとsunday wine clab","drink","liverary",1.53,6.34,10.23,0.57,6],
   ["TRESOL","goods","liverary",1.53,6.87,3.7,0.57,7],
   ["A.N.D.","goods","liverary",1.53,7.41,3.08,0.57,8],
@@ -261,8 +265,8 @@ const SHOP_DATA = [
   ["シヤチル","goods","liverary",1.53,12.2,3.37,0.57,15],
   ["CoffeeSupreme","drink","liverary",1.53,12.74,5.77,0.57,16],
   ["ブロッケン","goods","liverary",1.53,13.27,3.88,0.57,17],
-  ["炊々","goods","liverary",1.53,13.8,4.93,0.57,18],
-  ["幸福館","goods","liverary",1.53,14.34,5.54,0.57,19],
+  ["炊々","goods","liverary",1.53,13.8,4.93,0.57,18,["d2","d3"]],
+  ["幸福館","goods","liverary",1.53,14.34,5.54,0.57,19,["d2","d3"]],
   ["ネグラ(妄想インドカレーと越境庶民料理店)","food","liverary",1.53,14.87,7.9,0.57,20],
   ["OFF","goods","liverary",1.53,15.36,14.61,1.44,21],
   ["チーム銘々","goods","liverary",1.53,16.47,3.99,0.57,22],
@@ -272,10 +276,11 @@ const SHOP_DATA = [
   ["延命ランド","goods","liverary",1.53,18.6,3.91,0.57,26],
   ["KIOSCO","goods","liverary",1.53,19.13,3.67,0.57,27],
   ["JYUKU","goods","liverary",1.53,19.67,3.32,0.57,28],
-  ["NOTHING","goods","liverary",1.53,20.18,10.36,0.59,29],
-  ["Moloch","goods","liverary",1.53,20.73,5.97,0.57,30],
-  ["にしこはりこ","goods","liverary",1.53,21.26,6.67,0.57,31],
-  ["SUEKKOLIONS©","goods","liverary",1.53,21.8,3.83,0.57,32],
+  ["NOTHING","goods","liverary",1.53,20.18,10.36,0.59,29,["d2","d3"]],
+  ["Moloch","goods","liverary",1.53,20.73,5.97,0.57,30,["d2","d3"]],
+  ["にしこはりこ","goods","liverary",1.53,21.26,6.67,0.57,31,["d1","d2"]],
+  ["SUEKKO","goods","liverary",1.53,21.8,3.83,0.57,32,["d2","d3"]],
+  ["LIONS©","goods","liverary",1.53,21.8,3.83,0.57,32,["d1","d2"]],
   ["namo. × merry yarn","goods","liverary",1.53,22.86,3.76,0.57,33],
   ["チェルプ","goods","liverary",1.53,23.93,3.38,0.57,34],
   ["スペースたのしい","goods","liverary",1.53,32.46,5.46,0.57,35],
@@ -295,7 +300,7 @@ const SHOP_DATA = [
   ["DELI","food","liverary",1.53,39.92,2.65,0.57,49],
   ["rim","goods","liverary",1.53,40.45,2.16,0.57,50],
   ["新町ビル（山の花/地想）","goods","liverary",1.53,40.99,7.83,0.57,51],
-  ["インターチェンジ by Good Broken Charm","goods","liverary",1.53,41.52,14.93,0.57,52],
+  ["インターチェンジ by Good Broken Charm","goods","liverary",1.53,41.52,14.93,0.57,52,["d2","d3"]],
   ["MAKEDOO by Hiraparr","goods","liverary",1.53,42.05,7.84,0.57,53],
   ["CHA CHA CHA BOOKS & CAFE","drink","liverary",1.53,42.59,10.48,0.57,54],
   ["LIVERARY Extra","goods","liverary",1.53,43.12,6.04,0.57,55],
@@ -314,8 +319,8 @@ const SHOP_DATA = [
   ["The Goggo(ザ ゴゴー)","goods","river-market",1.52,52.28,7.34,0.57,10],
   ["quark+grenier","goods","river-market",1.52,52.81,5.2,0.57,11],
   ["アポロコーヒーワークス","drink","river-market",1.52,53.34,7.02,0.57,12],
-  ["hankachi/beauty","goods","river-market",1.52,53.88,8.58,0.57,13],
-  ["大澤哲哉/HIKARI MASUDA","goods","river-market",1.52,54.41,11.74,0.57,14],
+  ["hankachi/beauty","goods","river-market",1.52,53.88,8.58,0.57,13,["d2","d3"]],
+  ["大澤哲哉/HIKARI MASUDA","goods","river-market",1.52,54.41,11.74,0.57,14,["d2","d3"]],
   ["BAKERY dry river","food","river-market",1.52,54.94,6.29,0.57,15],
   ["小菅くみ＋そで山かほ子","goods","river-market",1.52,55.48,6.99,0.57,16],
   ["ペットの絵描きます　金森青葉","goods","river-market",1.52,56.01,8.8,0.57,17],
@@ -323,8 +328,8 @@ const SHOP_DATA = [
   ["きびす堂","goods","river-market",1.52,57.07,3.41,0.57,19],
   ["Instars","goods","river-market",1.52,57.61,3.17,0.57,20],
   ["ituka","goods","river-market",1.52,58.14,2.64,0.57,21],
-  ["米粉sweets kinun.","sweets","river-market",1.52,58.67,8.85,0.57,22],
-  ["チーズケーキ tenton-テントン-","sweets","river-market",1.52,59.21,11.42,0.57,23],
+  ["米粉sweets kinun.","sweets","river-market",1.52,58.67,8.85,0.57,22,["d2","d3"]],
+  ["チーズケーキ tenton-テントン-","sweets","river-market",1.52,59.21,11.42,0.57,23,["d2","d3"]],
   ["tope.information","goods","river-market",1.52,59.74,5.95,0.57,24],
   ["GRAPH.","goods","river-market",1.52,60.27,3.61,0.57,25],
   ["CAFE SNUG","drink","river-market",1.52,60.81,4.87,0.57,26],
@@ -339,7 +344,7 @@ const SHOP_DATA = [
   ["ヤマネギターズ","goods","river-market",1.52,65.6,4.94,0.57,35],
   ["茨木　伸恵","goods","river-market",1.52,66.14,3.73,0.57,36],
   ["FARCRY BREWINGとNUMB&HAZY","drink","venture",1.53,71.09,11.22,0.57,1],
-  ["EYL","goods","venture",1.53,71.62,2.46,0.57,2],
+  ["EYL","goods","venture",1.53,71.62,2.46,0.57,2,["d2","d3"]],
   ["AlexanderLeeChang","goods","venture",1.53,73.76,7.04,0.57,3],
   ["Lue","goods","venture",1.53,75.36,2.33,0.57,4],
   ["OLDMOUNTAIN","goods","venture",1.53,77.49,6.06,0.57,5],
@@ -388,7 +393,7 @@ const SHOP_DATA = [
   ["Burger Mania","food","ukiuki",16.64,83.85,5.07,0.57,1],
   ["スープカレーよつば","food","ukiuki",16.64,84.38,5.98,0.57,2],
   ["繁邦","goods","ukiuki",16.64,84.92,2.42,0.57,3],
-  ["VAAT","goods","ukiuki",16.64,85.45,4.92,0.57,4],
+  ["VAAT","goods","ukiuki",16.64,85.45,4.92,0.57,4,["d1"]],
   ["tak beans","goods","ukiuki",16.64,86.52,4.03,0.57,5],
   ["餃子スラッピー","food","ukiuki",16.64,87.05,4.92,0.57,6],
   ["MILK TEA SERVICE","drink","ukiuki",16.64,87.58,7.08,0.57,7],
@@ -402,9 +407,9 @@ const SHOP_DATA = [
   ["Tiny N","goods","ukiuki",16.64,91.85,3.1,0.57,15],
   ["fragrance yes","goods","ukiuki",16.64,92.38,5.1,0.57,16],
   ["WUY","goods","ukiuki",16.64,92.91,2.64,0.57,17],
-  ["八方美米・八方美菜","goods","ukiuki",16.64,93.45,8.68,0.57,18],
-  ["TANUKI APPETIZING","goods","ukiuki",16.64,94.51,9.46,0.57,19],
-  ["Blanc a tokyo","goods","ukiuki",16.64,95.58,7.81,0.57,20],
+  ["八方美米・八方美菜","goods","ukiuki",16.64,93.45,8.68,0.57,18,["d1","d2"]],
+  ["TANUKI APPETIZING","goods","ukiuki",16.64,94.51,9.46,0.57,19,["d1"]],
+  ["Blanc a tokyo","goods","ukiuki",16.64,95.58,7.81,0.57,20,["d1","d2"]],
   ["山角や","goods","ukiuki",16.64,96.64,2.93,0.57,21],
   ["KIKI WINE CLUB","drink","ukiuki",16.64,97.18,6.15,0.57,22],
   ["石窯PIZZA屋台boccheno","food","kaigan1",27.84,77.04,8.19,0.57,1],
@@ -460,12 +465,12 @@ const SHOP_DATA = [
   ["anytee","goods","eatbeat-ichi",38.5,86.9,3.15,0.57,21],
   ["仁井田本家","goods","eatbeat-ichi",38.5,87.44,4.07,0.57,22],
   ["奈良醸造","goods","eatbeat-ichi",38.5,87.97,3.51,0.57,23],
-  ["そば爺よしみ","food","kaigan5",38.54,90.81,6.54,0.57,1],
+  ["そば爺よしみ","food","kaigan5",38.54,90.81,6.54,0.57,1,["d1"]],
   ["サキアテジョーグー","goods","kaigan5",38.54,91.87,5.99,0.57,2],
   ["DAN","goods","kaigan5",38.54,92.41,2.59,0.57,3],
   ["yoknel","goods","kaigan5",38.54,93.47,3.17,0.57,5],
   ["立呑み 海と花束","drink","kaigan5",38.54,94.01,5.35,0.57,6],
-  ["旅する占いパーム","goods","kaigan5",38.54,94.54,8.93,0.57,7],
+  ["旅する占いパーム","goods","kaigan5",38.54,94.54,8.93,0.57,7,["d2","d3"]],
   ["旅する珈琲屋SweetMemoriesCoffee","drink","kaigan5",38.54,95.07,12.3,0.57,8],
   ["CAFUNEとREEF KNOT COFFEE","drink","kaigan5",38.54,95.61,11.29,0.57,9],
   ["OMIYAGE","goods","kaigan5",38.54,94.79,4.82,3.09,10],
@@ -492,7 +497,7 @@ const SHOP_DATA = [
   ["The Tiny Seed×BASIL CLUB","goods","yuenchi-market",52.6,4.74,5.96,0.57,4],
   ["SAPERLIPOPETTE さっぺりぽぺっと","goods","yuenchi-market",52.6,5.81,6.81,0.57,5],
   ["13倉庫yeti","goods","yuenchi-market",52.6,6.88,4.08,0.57,6],
-  ["森林食堂","food","yuenchi-market",52.6,7.41,5.56,0.57,7],
+  ["森林食堂","food","yuenchi-market",52.6,7.41,5.56,0.57,7,["d1"]],
   ["イチトサンブンノイチ","goods","yuenchi-market",52.6,8.47,6.3,0.57,8],
   ["LAMP:TheSauna","goods","yuenchi-market",52.6,9.01,5.99,0.57,9],
   ["Chè","goods","center-gai",55.3,87.03,2.4,0.57,1],
@@ -504,7 +509,7 @@ const SHOP_DATA = [
   ["再来","goods","center-gai",55.3,90.22,3.19,0.57,7],
   ["Pho321 Noodle bar／影響亜細亜","goods","center-gai",55.3,90.76,7.54,0.57,8],
   ["HEY&Ho.／影響亜細亜","goods","center-gai",55.3,91.29,4.67,0.57,9],
-  ["MARA MAX Hi-Fi HQ／影響亜細亜","goods","center-gai",55.3,91.82,10.66,0.57,10],
+  ["MARA MAX Hi-Fi HQ／影響亜細亜","goods","center-gai",55.3,91.82,10.66,0.57,10,["d1","d2"]],
   ["クリンスイ","goods","center-gai",55.3,92.89,4.54,0.57,11],
   ["影響亜細亜TravelingCOWBOOKS＋PageClimber","art","center-gai",55.3,92.69,13.72,2.25,12],
   ["CultureMountainResearch","goods","center-gai",55.3,95.19,8.39,1.06,16],
@@ -519,21 +524,21 @@ const SHOP_DATA = [
   ["ENJOY SAUNA by SaunaCamp.","goods","yuenchi-market2",61.33,4.03,10.3,0.57,3],
   ["IN/SECTS","goods","yuenchi-market2",61.33,4.56,4.25,0.57,4],
   ["TIGER MOUNTAIN","goods","yuenchi-market2",61.33,5.1,6.63,0.57,5],
-  ["ホホホ座浄土寺店","goods","yuenchi-market2",61.33,5.63,7.69,0.57,6],
+  ["ホホホ座浄土寺店","goods","yuenchi-market2",61.33,5.63,7.69,0.57,6,["d3"]],
   ["みじカルコレクション","goods","yuenchi-market2",61.33,6.16,6.47,0.57,7],
   ["PORCO","goods","yuenchi-market2",61.33,6.7,3.49,0.57,8],
   ["Ponchice","sweets","yuenchi-market2",61.33,7.23,3.92,0.57,9],
   ["vint.","goods","yuenchi-market2",61.33,7.76,2.42,0.57,10],
-  ["musica print works","art","yuenchi-market2",61.33,8.29,9.22,0.57,11],
+  ["musica print works","art","yuenchi-market2",61.33,8.29,9.22,0.57,11,["d2","d3"]],
   ["accessoriesmau×大岡弘晃　and more","goods","yuenchi-market2",61.33,8.83,11.41,0.57,12],
   ["morocco","goods","yuenchi-market2",61.33,9.36,3.77,0.57,13],
   ["Ain.Dah.ing","goods","yuenchi-market2",61.33,9.89,4.5,0.57,14],
-  ["まめちゃ／モリミチ喫茶室","drink","yuenchi-market2",61.33,10.43,6.12,0.57,15],
+  ["まめちゃ／モリミチ喫茶室","drink","yuenchi-market2",61.33,10.43,6.12,0.57,15,["d1"]],
   ["POSTO／モリミチ喫茶室","drink","yuenchi-market2",61.33,12.03,4.15,0.57,16],
-  ["円居","goods","yuenchi-market2",61.33,12.56,5.13,0.57,17],
+  ["円居","goods","yuenchi-market2",61.33,12.56,5.13,0.57,17,["d1"]],
   ["mado cafe／モリミチ喫茶室","drink","yuenchi-market2",61.33,14.16,4.97,0.57,18],
-  ["喫茶toi／モリミチ喫茶室","drink","yuenchi-market2",61.33,14.69,5.9,0.57,19],
-  ["スコーン家HARU ／モリミチ喫茶室","drink","yuenchi-market2",61.33,15.76,8.42,0.57,20],
+  ["喫茶toi／モリミチ喫茶室","drink","yuenchi-market2",61.33,14.69,5.9,0.57,19,["d1"]],
+  ["スコーン家HARU ／モリミチ喫茶室","drink","yuenchi-market2",61.33,15.76,8.42,0.57,20,["d1"]],
   ["senkiya OMOCHI CLUB","goods","east-caravan",72.74,74.55,8.01,0.57,1],
   ["TSUKIMO BAZAAR","goods","east-caravan",72.74,75.08,6.9,0.57,2],
   ["てがみと文字Fluke(フルーク)","goods","east-caravan",72.74,75.61,8.54,0.57,3],
@@ -541,7 +546,7 @@ const SHOP_DATA = [
   ["ripa","goods","east-caravan",72.74,76.68,2.35,0.57,5],
   ["運麺PARK","food","east-caravan",72.74,77.21,4.1,0.57,6],
   ["電気湯","goods","east-caravan",72.74,77.75,2.99,0.57,7],
-  ["どすこいドーナツ休日場所","sweets","east-caravan",72.74,78.28,10.23,0.57,8],
+  ["どすこいドーナツ休日場所","sweets","east-caravan",72.74,78.28,10.23,0.57,8,["d2","d3"]],
   ["POP.POP.POP","goods","east-caravan",72.74,78.81,5.39,0.57,9],
   ["旅するよしえのにがおえ屋さん","goods","east-caravan",72.74,79.35,8.57,0.57,10],
   ["ぺぺぺ似顔絵店","art","east-caravan",72.74,79.88,5.15,0.57,11],
@@ -550,9 +555,9 @@ const SHOP_DATA = [
   ["YURTAO","goods","east-caravan",72.74,81.48,3.73,0.57,14],
   ["OTTOMO","goods","east-caravan",72.74,82.01,3.96,0.57,15],
   ["ilu kamakura ゆげ","goods","east-caravan",72.74,83.08,6.17,0.57,17],
-  ["TPM BREWING","drink","east-caravan",72.74,83.61,8.23,0.57,18],
-  ["ヘブンズテーブル","goods","east-caravan",72.74,84.14,7.96,0.57,19],
-  ["笹塚ビールスタンド by MASUMOTOYA","drink","east-caravan",72.74,84.68,13.98,0.57,20],
+  ["TPM BREWING","drink","east-caravan",72.74,83.61,8.23,0.57,18,["d2","d3"]],
+  ["ヘブンズテーブル","goods","east-caravan",72.74,84.14,7.96,0.57,19,["d2","d3"]],
+  ["笹塚ビールスタンド by MASUMOTOYA","drink","east-caravan",72.74,84.68,13.98,0.57,20,["d2","d3"]],
   ["KenichiKondo","goods","east-caravan",72.74,85.21,5.43,0.57,21],
   ["チプカとプクチカ","goods","nagano",74.87,88.11,5.43,0.57,1],
   ["takuramakan","goods","nagano",74.87,88.64,4.95,0.57,2],
@@ -578,7 +583,7 @@ const SHOP_DATA = [
   ["人々","goods","play-market",76.73,44.63,2.37,0.57,2],
   ["mature ha. Atelier shop","art","play-market",76.73,46.22,7.95,0.57,4],
   ["ざ・デイリーズ","goods","play-market",76.73,46.76,4.74,0.57,5],
-  ["メルヘン大蔵のスゲ細工","goods","play-market",76.73,47.29,9.86,0.57,6],
+  ["メルヘン大蔵のスゲ細工","goods","play-market",76.73,47.29,9.86,0.57,6,["d2","d3"]],
   ["QUE sera sera","goods","play-market",76.73,47.82,5.43,0.57,7],
   ["25ris","goods","play-market",76.73,48.36,2.67,0.57,8],
   ["古道具holo","goods","play-market",76.73,48.89,4.22,0.57,9],
@@ -613,7 +618,7 @@ const SHOP_DATA = [
   ["野菜居酒屋いたぎ家","drink","fantastic",89.28,65.01,6.21,0.57,11],
   ["graf kitchen","food","fantastic",89.28,65.55,4.59,0.57,12],
   ["ダイヤメゾン","goods","fantastic",89.28,66.08,4.29,0.57,13],
-  ["ダルマワークス","goods","fantastic",89.28,66.61,7.52,0.57,14],
+  ["ダルマワークス","goods","fantastic",89.28,66.61,7.52,0.57,14,["d2","d3"]],
   ["obrarte","goods","fantastic",89.28,67.15,3.3,0.57,15],
   ["TE tea and eating","drink","fantastic",89.28,67.68,6.25,0.57,16],
   ["RISE&WIN Brewing Co./KAMIKATZ BEER","drink","fantastic",89.28,68.21,8.38,0.57,17],
@@ -625,7 +630,7 @@ const SHOP_DATA = [
   ["LACICO","goods","fantastic",89.28,71.94,3.6,0.57,23],
   ["Tubu.","goods","fantastic",89.28,72.48,2.81,0.57,24],
   ["yamyam STORE","goods","fantastic",89.28,73.01,5.88,0.57,25],
-  ["UNE TABLE","goods","fantastic",89.28,73.54,7.33,0.57,26],
+  ["UNE TABLE","goods","fantastic",89.28,73.54,7.33,0.57,26,["d2","d3"]],
   ["RAINBOWFAM","goods","fantastic",89.28,74.08,5.47,0.57,27],
   ["RumChai","drink","fantastic",89.28,74.61,3.81,0.57,28],
   ["lovecycle","goods","fantastic",89.28,75.14,3.92,0.57,29],
@@ -633,10 +638,10 @@ const SHOP_DATA = [
   ["saredo -されど-","goods","fantastic",89.28,76.21,5.29,0.57,31],
   ["okapi","goods","fantastic",89.28,76.74,2.81,0.57,32],
   ["泉州と堺の糸へん","goods","fantastic",89.28,77.27,5.68,0.57,33],
-  ["奥谷農園","food","fantastic",89.28,77.81,6.12,0.57,34],
+  ["奥谷農園","food","fantastic",89.28,77.81,6.12,0.57,34,["d2","d3"]],
   ["maemuki suit!","goods","fantastic",89.28,78.34,5.2,0.57,35],
   ["ぐびっと淡路島！","goods","fantastic",89.28,78.87,5.57,0.57,36],
-  ["puro(プーロ)","goods","fantastic",89.28,79.41,7.12,0.57,37],
+  ["puro(プーロ)","goods","fantastic",89.28,79.41,7.12,0.57,37,["d2","d3"]],
   ["源次郎商店","goods","shibafu",89.29,82.31,4.13,0.57,1],
   ["KAMOGO","goods","shibafu",89.29,83.38,4.11,0.57,2],
   ["宗像堂","goods","shibafu",89.29,83.91,3.0,0.57,3],
@@ -644,21 +649,21 @@ const SHOP_DATA = [
   ["Wrong Market","goods","shibafu",89.29,84.97,5.27,0.57,5],
   ["タイ・モンゴル武者修行商会","goods","shibafu",89.29,85.51,8.14,0.57,6],
   ["ラオス料理タマサート","food","shibafu",89.29,86.04,7.38,0.57,7],
-  ["Watte chai","drink","shibafu",89.29,86.57,7.69,0.57,8],
+  ["Watte chai","drink","shibafu",89.29,86.57,7.69,0.57,8,["d2","d3"]],
   ["B+ND","goods","shibafu",89.29,87.11,3.75,0.57,9],
   ["SUMI","goods","shibafu",89.29,87.64,3.53,0.57,10],
   ["suba.kyoto","goods","shibafu",89.29,88.17,5.11,0.57,11],
-  ["ha ra","goods","shibafu",89.29,88.71,6.04,0.57,12],
+  ["ha ra","goods","shibafu",89.29,88.71,6.04,0.57,12,["d1","d2"]],
   ["３みっつ","goods","shibafu",89.29,90.31,4.11,0.57,13],
-  ["四月の魚","goods","shibafu",89.29,90.84,6.8,0.57,14],
-  ["magic room","goods","shibafu",89.29,91.37,7.98,0.57,15],
+  ["四月の魚","goods","shibafu",89.29,90.84,6.8,0.57,14,["d2","d3"]],
+  ["magic room","goods","shibafu",89.29,91.37,7.98,0.57,15,["d2","d3"]],
   ["パルメラ","goods","shibafu",89.29,90.86,4.12,2.25,16],
   ["モンゴルパン","food","shibafu",89.29,92.44,5.23,0.57,17],
   ["HOZUBAG","goods","shibafu",89.29,92.97,5.04,0.57,18],
   ["りんご","goods","shibafu",89.29,93.5,3.59,0.57,19],
   ["小林酒店","drink","shibafu",89.29,94.04,4.31,0.57,20],
-  ["Sake World","drink","shibafu",89.29,94.57,7.91,0.57,21],
-  ["BAUM","goods","shibafu",89.29,95.1,6.41,0.57,22],
+  ["Sake World","drink","shibafu",89.29,94.57,7.91,0.57,21,["d2","d3"]],
+  ["BAUM","goods","shibafu",89.29,95.1,6.41,0.57,22,["d1","d2"]],
   ["鴨庭","goods","shibafu",89.29,95.64,3.17,0.57,23],
   ["TARELとcam","goods","shibafu",89.29,96.17,5.7,0.57,24],
   ["山ねこ","goods","shibafu",89.29,96.7,3.69,0.57,25],
@@ -671,13 +676,15 @@ const SHOP_DATA = [
      hasMapPos=false となり、マップのハイライト対象外（リスト・検索には出る）。
      カテゴリは店名からの推定。 */
   ["OFF THE RECORD","art","liverary"],
-  ["社交酒場イム","drink","liverary"],
+  /* 番号5: カロリー軒[金] と日替わり。土・日のみ出店 */
+  ["社交酒場イム","drink","liverary",1.53,5.27,5.92,0.57,5,["d2","d3"]],
   ["BURGER STAND haveagoodtime. x daybyday","food","liverary"],
   ["BASE LAYER HOTEL","goods","liverary"],
 
   ["岩田商店","goods","eatbeat-ichi"],
 
-  ["hitoha COFFEE & GRANOLA","drink","east-caravan"],
+  /* 番号16: 公式マップに座標未取得。土・日のみ */
+  ["hitoha COFFEE & GRANOLA","drink","east-caravan",null,null,null,null,16,["d2","d3"]],
 
   ["IMAGINE.COFEEE","drink","shimanami"],
   ["エスニックスタンド メイクワンツー","food","shimanami"],
@@ -704,57 +711,69 @@ const SHOP_DATA = [
   ["FLOAT","goods","shimanami"],
   ["BAILER","goods","shimanami"],
   ["ミルク工房そら","sweets","shimanami"],
-  ["ヤンフー×イワサトミキ","goods","shimanami"],
+  ["ヤンフー×イワサトミキ","goods","shimanami",null,null,null,null,null,["d2","d3"]],
   ["LA PITA DE MAISON CINQUANTECINQ","food","shimanami"],
   ["wineshop&stand slowcave","drink","shimanami"],
 
+  /* POMO MAISON は土・日のみ。TOKIIRO COFFEE と複合店表記のため複合店としては全日扱い */
   ["TOKIIRO COFFEE ＆ POMO MAISON","drink","play-market"],
   ["hacu","goods","play-market"],
   ["FRECKLE","goods","play-market"],
 
-  ["EN/ME","goods","ukiuki"],
+  /* 番号4: VAAT[金]とペア。土・日のみ出店 */
+  ["EN/ME","goods","ukiuki",16.64,85.45,4.92,0.57,4,["d2","d3"]],
   ["ORANGUTAN","goods","ukiuki"],
-  ["KISO","goods","ukiuki"],
-  ["Slō","goods","ukiuki"],
+  /* 番号19: TANUKI APPETIZING[金]とペア。土・日のみ */
+  ["KISO","goods","ukiuki",16.64,94.51,9.46,0.57,19,["d2","d3"]],
+  /* 番号20: Blanc a tokyo[金・土]とペア。日のみ */
+  ["Slō","goods","ukiuki",16.64,95.58,7.81,0.57,20,["d3"]],
   ["TOO WOOD","goods","ukiuki"],
   ["PADDLERS COFFEE","drink","ukiuki"],
-  ["山城果樹園","food","ukiuki"],
+  /* 番号18: 八方美米・八方美菜[金・土]とペア。日のみ */
+  ["山城果樹園","food","ukiuki",16.64,93.45,8.68,0.57,18,["d3"]],
   ["LOU","goods","ukiuki"],
 
+  /* 種と旅と（tane）の日替わり店。番号7-10で時間別に店舗が入れ替わる。
+     座標は同番号の代表店（igora=番号4）の近傍を継承しないため null とし、
+     マップ非対応の追加店扱い。booth番号は出店日フィルタの確認用。 */
   ["AKITO COFFEE","drink","tane"],
   ["Appartement coffee","drink","tane"],
-  ["ARBOL ICECREAM","sweets","tane"],
-  ["ALO（アロ）","goods","tane"],
-  ["伊藤渉","goods","tane"],
-  ["Ethnic tam＋neutral","goods","tane"],
+  ["ARBOL ICECREAM","sweets","tane",null,null,null,null,10,["d1"]],
+  ["ALO（アロ）","goods","tane",null,null,null,null,8,["d1"]],
+  ["伊藤渉","goods","tane",null,null,null,null,7,["d1"]],
+  ["Ethnic tam＋neutral","goods","tane",null,null,null,null,8,["d2"]],
   ["HOWENE","goods","tane"],
-  ["お酒と料理えいよう","food","tane"],
-  ["カルパ","goods","tane"],
-  ["樹和堂","goods","tane"],
-  ["sagoggio","goods","tane"],
-  ["sundaysfood","food","tane"],
-  ["Sunday Bake Shop","sweets","tane"],
-  ["SUNPEDAL（サンペダル）","goods","tane"],
-  ["csew","goods","tane"],
-  ["自然派料理店　糧","food","tane"],
-  ["チェスト","goods","tane"],
-  ["月とピエロ","goods","tane"],
-  ["Tearoom Alpes","drink","tane"],
+  ["お酒と料理えいよう","food","tane",null,null,null,null,8,["d2"]],
+  ["カルパ","goods","tane",null,null,null,null,9,["d3"]],
+  ["樹和堂","goods","tane",null,null,null,null,9,["d1"]],
+  ["sagoggio","goods","tane",null,null,null,null,7,["d2"]],
+  ["sundaysfood","food","tane",null,null,null,null,9,["d2"]],
+  ["Sunday Bake Shop","sweets","tane",null,null,null,null,9,["d2"]],
+  ["SUNPEDAL（サンペダル）","goods","tane",null,null,null,null,7,["d1"]],
+  ["csew","goods","tane",null,null,null,null,8,["d3"]],
+  ["自然派料理店　糧","food","tane",null,null,null,null,7,["d2"]],
+  ["チェスト","goods","tane",null,null,null,null,9,["d3"]],
+  ["月とピエロ","goods","tane",null,null,null,null,9,["d3"]],
+  ["Tearoom Alpes","drink","tane",null,null,null,null,9,["d1"]],
   ["nai","goods","tane"],
-  ["パーラー江古田","food","tane"],
-  ["Patisserie RaRe","sweets","tane"],
-  ["パン屋 塩見","food","tane"],
-  ["Bèe","goods","tane"],
-  ["ひのめ","goods","tane"],
-  ["Peg","goods","tane"],
-  ["boat","goods","tane"],
-  ["薪火野","food","tane"],
-  ["MUBE","goods","tane"],
-  ["湯宿 蒸気家 feat. Yusuke Kashima","goods","tane"],
-  ["ラ・ブーランジェリー・ド・ハリマヤ","food","tane"],
-  ["Ryohei Takamatsu","art","tane"],
-  ["ワイン食堂トキワ","drink","tane"],
+  ["パーラー江古田","food","tane",null,null,null,null,9,["d3"]],
+  ["Patisserie RaRe","sweets","tane",null,null,null,null,9,["d2"]],
+  ["パン屋 塩見","food","tane",null,null,null,null,9,["d3"]],
+  ["Bèe","goods","tane",null,null,null,null,8,["d1"]],
+  ["ひのめ","goods","tane",null,null,null,null,7,["d3"]],
+  ["Peg","goods","tane",null,null,null,null,8,["d3"]],
+  ["boat","goods","tane",null,null,null,null,8,["d2"]],
+  ["薪火野","food","tane",null,null,null,null,9,["d2"]],
+  ["MUBE","goods","tane",null,null,null,null,9,["d3"]],
+  ["湯宿 蒸気家 feat. Yusuke Kashima","goods","tane",null,null,null,null,7,["d1"]],
+  ["ラ・ブーランジェリー・ド・ハリマヤ","food","tane",null,null,null,null,9,["d1"]],
+  ["Ryohei Takamatsu","art","tane",null,null,null,null,9,["d1"]],
+  ["ワイン食堂トキワ","drink","tane",null,null,null,null,7,["d3"]],
   ["wineshop flow","drink","tane"],
+  /* hnn[日 16:00-] と ルヴァン甲田幹夫[日 16:00-] も番号9。
+     既存データに未登録のため新規追加。 */
+  ["hnn","food","tane",null,null,null,null,9,["d3"]],
+  ["ルヴァン甲田幹夫","food","tane",null,null,null,null,9,["d3"]],
 
   ["Chè 333","sweets","center-gai"],
   ["MMF／影響亜細亜 Culture Shop","goods","center-gai"],
@@ -762,29 +781,37 @@ const SHOP_DATA = [
   ["QUIET SPACE TOOL & FURNITURE／影響亜細亜 Culture Shop","goods","center-gai"],
   ["DIGAWEL／影響亜細亜 Culture Shop","goods","center-gai"],
   ["24PILLARS／影響亜細亜 Culture Shop","goods","center-gai"],
-  ["TOKYO CULTUART by BEAMS／影響亜細亜","goods","center-gai"],
+  /* center-gai 番号10: MARA MAX Hi-Fi HQ[金・土]とペア。日のみ */
+  ["TOKYO CULTUART by BEAMS／影響亜細亜","goods","center-gai",55.3,91.82,10.66,0.57,10,["d3"]],
   ["Highway（南国灰道倶楽部）／影響亜細亜 Culture Shop","goods","center-gai"],
   ["BE A GOOD NEIGHBOR COFFEE KIOSK／影響亜細亜 Culture Shop","drink","center-gai"],
 
   ["農・豊・賛／nopposan","food","kaigan5"],
-  ["森道結婚式＆海岸美容院","goods","kaigan5"],
+  /* PDFテキスト上の位置からはウキウキ通り番号14（青果ミコト屋）とペア
+     とも読めるが、既存データの kaigan5 を踏襲。土・日のみ */
+  ["森道結婚式＆海岸美容院","goods","kaigan5",null,null,null,null,null,["d2","d3"]],
 
   ["affordance + Onawa","goods","kaigan3"],
   ["SNOW SHOVELING [Caravan]","goods","kaigan3"],
 
   ["TORAYA EQUIPMENT","goods","kaigan2"],
 
-  ["O2","goods","yuenchi-market"],
+  /* 番号7: 森林食堂[金]とペア。土・日のみ */
+  ["O2","goods","yuenchi-market",52.6,7.41,5.56,0.57,7,["d2","d3"]],
 
-  ["oyatsupokke／モリミチ喫茶室","food","yuenchi-market2"],
-  ["space／モリミチ喫茶室","drink","yuenchi-market2"],
-  ["deli＆tea käwäsemi／モリミチ喫茶室","drink","yuenchi-market2"],
-  ["ヒトトキ -人と木-／モリミチ喫茶室","drink","yuenchi-market2"],
-  ["Felt coffee／モリミチ喫茶室","drink","yuenchi-market2"],
-  ["uneclef／モリミチ喫茶室","drink","yuenchi-market2"],
+  /* モリミチ喫茶室の日替わり店（番号15-20） */
+  ["oyatsupokke／モリミチ喫茶室","food","yuenchi-market2",61.33,15.76,8.42,0.57,20,["d2","d3"]],
+  ["space／モリミチ喫茶室","drink","yuenchi-market2",61.33,14.69,5.9,0.57,19,["d2","d3"]],
+  ["deli＆tea käwäsemi／モリミチ喫茶室","drink","yuenchi-market2",61.33,10.43,6.12,0.57,15,["d2"]],
+  ["ヒトトキ -人と木-／モリミチ喫茶室","drink","yuenchi-market2",61.33,10.43,6.12,0.57,15,["d3"]],
+  ["Felt coffee／モリミチ喫茶室","drink","yuenchi-market2",61.33,12.56,5.13,0.57,17,["d2","d3"]],
+  ["uneclef／モリミチ喫茶室","drink","yuenchi-market2",61.33,14.16,4.97,0.57,18,["d2","d3"]],
 
-  ["Nowhereman","goods","shibafu"],
-  ["Méton","goods","shibafu"],
+  /* venture 番号23: 中囿 義光とペア。日のみ。エリアは shibafu ではなく venture
+     とすべきだが、既存データの互換性を保つため shibafu のまま保持。 */
+  ["Nowhereman","goods","shibafu",null,null,null,null,null,["d3"]],
+  /* nagano 番号4: 重澤珈琲とペア。日のみ */
+  ["Méton","goods","shibafu",null,null,null,null,null,["d3"]],
   ["ゆとなみ社","goods","shibafu"],
   ["和歌山酒場","drink","shibafu"],
 
@@ -792,7 +819,7 @@ const SHOP_DATA = [
   ["アトリエブルーボトル","goods","venture"],
   ["稲とアガベ","drink","venture"],
   ["ココ・ファーム・ワイナリー","drink","venture"],
-  ["一二","goods","venture"],
+  ["一二","goods","venture",null,null,null,null,null,["d2","d3"]],
   ["Purveyors","goods","venture"],
   ["Hi Hi Hi","goods","venture"],
   ["ぷくぷく醸造","drink","venture"],
@@ -800,7 +827,7 @@ const SHOP_DATA = [
   ["PLusBeat-月のうらがわ-","goods","venture"],
   ["BRING","goods","venture"],
   ["mörk","sweets","venture"],
-  ["WONDER WORKS","goods","venture"]
+  ["WONDER WORKS","goods","venture",null,null,null,null,null,["d2","d3"]]
 
 ];
 
@@ -820,21 +847,28 @@ const ARTISTS = ARTIST_DATA.map((a, i) => ({
 }));
 
 const SHOPS = SHOP_DATA.map((s, i) => {
-  const [name, cat, zone, x, y, w, h, booth] = s;
+  const [name, cat, zone, x, y, w, h, booth, days] = s;
   const z = ZONE_BY_ID[zone];
   const c = CAT[cat] || { label: '', icon: '🛍️' };
   /* hasMapPos … 公式マップPDFの座標を持つ店か。座標なしの追加店は
      マップのハイライト・ピン処理から除外する（falseならマップ非対応）。 */
   const hasMapPos = typeof x === 'number' && x > 0;
+  /* days … 出店日（['d1','d2','d3'] のサブセット）。
+     未指定または空配列は全日出店扱い（=フィルタを通る）。 */
+  const dayList = Array.isArray(days) && days.length ? days.slice() : null;
   return {
     id: 's' + i, name, cat,
     catLabel: c.label, catIcon: c.icon,
     zone, zoneName: z ? z.name : '',
     booth: booth || null,              // 公式マップのブース番号
     hasMapPos,
-    mx: x, my: y, mw: w, mh: h         // マップ上の店名ハイライト矩形（%）
+    mx: x, my: y, mw: w, mh: h,        // マップ上の店名ハイライト矩形（%）
+    days: dayList                       // null=全日 / 配列=指定日のみ
   };
 });
+
+/* ある店が指定日に出店するか。days が null なら全日扱い。 */
+const shopOpenOn = (s, dayId) => !s.days || s.days.indexOf(dayId) !== -1;
 
 /* エリア名ラベルの位置（公式PDFから抽出した正規化矩形 %）。形式 [x%,y%,幅%,高さ%]。
 
