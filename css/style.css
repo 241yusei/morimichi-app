@@ -181,6 +181,24 @@ main{
 .now-meta{font-size:11.5px;color:var(--sub);}
 .now-empty{font-size:12px;color:var(--sub);padding:4px 0;}
 
+/* アフターパーティ導線バナー（横長・送客用）。テーマカラーは
+   afterparty 側の theme_color (#e8694a) に合わせて視覚的に接続する。 */
+.afterparty-banner{
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:#e8694a;color:#fff;
+  border:2.5px solid var(--ink);border-radius:12px;
+  box-shadow:var(--hard);
+  padding:13px 14px;margin-bottom:14px;text-align:left;
+  transition:.1s;
+}
+.afterparty-banner:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+.afterparty-banner__ico{font-size:28px;flex-shrink:0;line-height:1;}
+.afterparty-banner__body{flex:1;min-width:0;}
+.afterparty-banner__title{font-size:14px;font-weight:800;line-height:1.2;}
+.afterparty-banner__desc{font-size:11px;font-weight:600;opacity:.96;
+  margin-top:3px;line-height:1.4;}
+.afterparty-banner__arr{font-size:20px;font-weight:800;flex-shrink:0;}
+
 .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
 .quick-btn{
   background:var(--card);border:2.5px solid var(--ink);border-radius:11px;

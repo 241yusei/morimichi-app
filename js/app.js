@@ -403,6 +403,19 @@
       '必ず <a href="' + FESTIVAL.official +
       '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
 
+    /* アフターパーティ導線。感想・思い出投稿用の非公式アプリへの送客バナー。
+       クイックメニューより前に出して、開催中〜開催後に見つけやすくする。 */
+    const apb = el('button', 'afterparty-banner',
+      `<div class="afterparty-banner__ico">🪩</div>
+       <div class="afterparty-banner__body">
+         <div class="afterparty-banner__title">森道 After party</div>
+         <div class="afterparty-banner__desc">感想・思い出を投稿してみんなと共有する非公式アプリ</div>
+       </div>
+       <div class="afterparty-banner__arr">›</div>`);
+    apb.onclick = () =>
+      openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/');
+    root.appendChild(apb);
+
     /* クイック */
     root.appendChild(secTitle('クイックメニュー', 'MENU'));
     const qg = el('div', 'quick-grid');
