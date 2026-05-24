@@ -18,7 +18,7 @@
   --soft:#e7e1d4;
   --ok:#1f9d57;
   --tabh:60px;
-  --headh:106px;
+  --headh:134px;
   --hard:3px 3px 0 var(--ink);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -81,6 +81,42 @@ body.night :focus-visible{outline-color:var(--teal-l);}
 .day-tab span{font-size:10px;letter-spacing:.12em;font-weight:700;}
 .day-tab.active{background:var(--yellow);color:var(--ink2);
   box-shadow:3px 3px 0 #222;transform:translate(-1px,-1px);}
+
+/* ---------- 電光掲示板（マーキー） ---------- */
+.marquee{
+  background:#0a0a0a;
+  border-top:2px solid #222;
+  border-bottom:2px solid #222;
+  overflow:hidden;
+  position:relative;
+  height:28px;
+  display:flex;align-items:center;
+}
+.marquee::before,.marquee::after{
+  content:"";position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none;
+}
+.marquee::before{left:0;background:linear-gradient(90deg,#0a0a0a 0%,rgba(10,10,10,0) 100%);}
+.marquee::after{right:0;background:linear-gradient(270deg,#0a0a0a 0%,rgba(10,10,10,0) 100%);}
+.marquee__track{
+  display:flex;flex-shrink:0;gap:64px;
+  animation:marquee-scroll 30s linear infinite;
+  will-change:transform;
+}
+.marquee__text{
+  display:inline-block;white-space:nowrap;flex-shrink:0;
+  color:#ffcc33;
+  font-family:"Montserrat","Hiragino Sans","Noto Sans JP",sans-serif;
+  font-weight:700;font-size:13px;letter-spacing:.02em;
+  text-shadow:0 0 4px rgba(255,204,51,.65),0 0 10px rgba(255,180,40,.35);
+  padding-right:64px;
+}
+@keyframes marquee-scroll{
+  from{transform:translateX(0);}
+  to{transform:translateX(-50%);}
+}
+@media (prefers-reduced-motion:reduce){
+  .marquee__track{animation-duration:90s;}
+}
 
 /* ---------- メイン ---------- */
 main{
