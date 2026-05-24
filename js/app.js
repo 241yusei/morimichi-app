@@ -409,7 +409,7 @@
       `<div class="afterparty-banner__ico">🪩</div>
        <div class="afterparty-banner__body">
          <div class="afterparty-banner__title">森道 After party</div>
-         <div class="afterparty-banner__desc">感想・思い出を投稿してみんなと共有する非公式アプリ</div>
+         <div class="afterparty-banner__desc">感想・思い出を投稿できる非公式アプリ</div>
        </div>
        <div class="afterparty-banner__arr">›</div>`);
     apb.onclick = () =>
