@@ -18,9 +18,18 @@
        ウキウキ通り 18-20 など）を正しく絞り込むために必須。 */
     shopDay: 'all',
     myplanTab: 'artists',
+    /* マイプラン「行きたい出店」内の第2層タブ。
+       wishlist=既存fav(行きたい) / visited=行った / nextyear=来年行きたい */
+    myplanShopSubTab: 'wishlist',
     fav: load('mm2026_fav', { artists: [], shops: [] }),
     checks: load('mm2026_checks', {}),
     recent: load('mm2026_recent', { shops: [], artists: [] }),
+    /* 行った出店IDの配列（fav と独立）。✅ 訪問チェック用。 */
+    visited: load('mm2026_visited', []),
+    /* 来年行きたい出店IDの配列（出店のみ。アーティストは毎年変わるため対象外） */
+    nextYear: load('mm2026_nextyear', []),
+    /* 出店ごとのメモ。{shopId: {tags: string[], body: string, updatedAt: number}} */
+    notes: load('mm2026_notes', {}),
     night: initNight()
   };
   /* 夜モード初期値：保存値があれば優先、無ければ端末のダークモード設定に従う。
@@ -55,6 +64,10 @@
     const r = state.recent;
     if (!r || typeof r !== 'object' || !Array.isArray(r.shops) || !Array.isArray(r.artists))
       state.recent = { shops: [], artists: [] };
+    if (!Array.isArray(state.visited)) state.visited = [];
+    if (!Array.isArray(state.nextYear)) state.nextYear = [];
+    if (!state.notes || typeof state.notes !== 'object' || Array.isArray(state.notes))
+      state.notes = {};
   }
   function saveFav() { save('mm2026_fav', state.fav); }
   function isFav(t, id) { return state.fav[t].indexOf(id) !== -1; }
@@ -62,6 +75,55 @@
     const a = state.fav[t], i = a.indexOf(id);
     if (i === -1) { a.push(id); return true; }
     a.splice(i, 1); return false;
+  }
+  /* 行った（visited）API — fav と同じパターン。出店のみ。 */
+  function saveVisited() { save('mm2026_visited', state.visited); }
+  function isVisited(id) { return state.visited.indexOf(id) !== -1; }
+  function toggleVisited(id) {
+    const i = state.visited.indexOf(id);
+    if (i === -1) { state.visited.push(id); return true; }
+    state.visited.splice(i, 1); return false;
+  }
+  /* 来年行きたい（nextYear）API — 出店のみ。 */
+  function saveNextYear() { save('mm2026_nextyear', state.nextYear); }
+  function isNextYear(id) { return state.nextYear.indexOf(id) !== -1; }
+  function toggleNextYear(id) {
+    const i = state.nextYear.indexOf(id);
+    if (i === -1) { state.nextYear.push(id); return true; }
+    state.nextYear.splice(i, 1); return false;
+  }
+  /* ショップメモ API。{tags, body, updatedAt} を持つ。
+     空オブジェクト相当（tags が空配列＆body が空文字）になったら state からも削除する。 */
+  function saveNotes() { save('mm2026_notes', state.notes); }
+  function getNote(id) {
+    const n = state.notes[id];
+    if (!n || typeof n !== 'object') return { tags: [], body: '', updatedAt: 0 };
+    return {
+      tags: Array.isArray(n.tags) ? n.tags : [],
+      body: typeof n.body === 'string' ? n.body : '',
+      updatedAt: typeof n.updatedAt === 'number' ? n.updatedAt : 0
+    };
+  }
+  function setNote(id, obj) {
+    const tags = Array.isArray(obj.tags) ? obj.tags : [];
+    const body = (typeof obj.body === 'string' ? obj.body : '').slice(0, 500);
+    if (tags.length === 0 && body.length === 0) {
+      delete state.notes[id];
+    } else {
+      state.notes[id] = { tags, body, updatedAt: Date.now() };
+    }
+  }
+  function hasNote(id) {
+    const n = state.notes[id];
+    return !!(n && ((Array.isArray(n.tags) && n.tags.length > 0) || (typeof n.body === 'string' && n.body.length > 0)));
+  }
+  /* メモ用の固定タグ。順序は表示順。 */
+  const NOTE_TAGS = ['おすすめ', 'また来たい', '待ち時間注意', '売切れ早い', '写真映え'];
+  /* メモ入力の debounce 用 timer 保持 */
+  let _noteSaveTimer = null;
+  function scheduleSaveNotes(delay) {
+    if (_noteSaveTimer) clearTimeout(_noteSaveTimer);
+    _noteSaveTimer = setTimeout(() => { saveNotes(); _noteSaveTimer = null; }, delay || 500);
   }
   /* 'YYYY-MM-DD' + 'HH:MM' をローカル時刻の Date に（iOS Safari 互換のため
      文字列パースに頼らず数値引数で生成する） */
@@ -1289,10 +1351,21 @@
     renderShopList();
   }
   function shopTile(s) {
-    const t = el('div', 'tile',
+    const v = isVisited(s.id);
+    const m = hasNote(s.id);
+    const ny = isNextYear(s.id);
+    /* バッジ重ね順：✅ visited → 📝 memo → 🌱 nextyear。tile__fav は右上に固定。
+       バッジが多すぎるとタイルがうるさくなるため、状態がある時だけ表示する。 */
+    const badges = [
+      v ? '<span class="tile__badge tile__badge--visited" title="行った">✅</span>' : '',
+      m ? '<span class="tile__badge tile__badge--memo" title="メモあり">📝</span>' : '',
+      ny ? '<span class="tile__badge tile__badge--nextyear" title="来年も行きたい">🌱</span>' : ''
+    ].filter(Boolean).join('');
+    const t = el('div', 'tile' + (v ? ' tile--visited' : ''),
       `<div class="tile__cat">${s.catIcon}</div>
        <div class="tile__name">${esc(s.name)}</div>
        <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
+       ${badges ? `<div class="tile__badges">${badges}</div>` : ''}
        <button class="tile__fav" aria-label="お気に入り">${
          isFav('shops', s.id) ? '★' : '☆'}</button>`);
     t.onclick = () => openShop(s.id);
@@ -1403,37 +1476,205 @@
       });
       root.appendChild(g);
     } else {
-      const favs = SHOPS.filter(s => isFav('shops', s.id));
-      if (!favs.length) {
-        root.appendChild(el('div', 'empty',
-          '<div class="big">🛍️</div>行きたい出店を登録すると<br>ここに一覧表示されます'));
+      /* 「行きたい出店」タブ：第2層チップで wishlist / visited / nextyear を切替 */
+      const subCounts = {
+        wishlist: state.fav.shops.length,
+        visited: state.visited.length,
+        nextyear: state.nextYear.length
+      };
+      const subTabs = el('div', 'chips chips--sub');
+      [['wishlist', '⭐ 行きたい'],
+       ['visited',  '✅ 行った'],
+       ['nextyear', '🌱 来年']
+      ].forEach(sb => {
+        const c = el('button', 'chip' + (state.myplanShopSubTab === sb[0] ? ' active' : ''),
+          sb[1] + ' (' + subCounts[sb[0]] + ')');
+        c.onclick = () => { state.myplanShopSubTab = sb[0]; renderMyplan(); };
+        subTabs.appendChild(c);
+      });
+      root.appendChild(subTabs);
+
+      const sub = state.myplanShopSubTab;
+      let list = [];
+      let emptyMsg = '';
+      if (sub === 'wishlist') {
+        list = SHOPS.filter(s => isFav('shops', s.id));
+        emptyMsg = '<div class="big">🛍️</div>行きたい出店を登録すると<br>ここに一覧表示されます';
+      } else if (sub === 'visited') {
+        list = SHOPS.filter(s => isVisited(s.id));
+        emptyMsg = '<div class="big">✅</div>出店モーダルで「行った」をタップすると<br>ここに一覧表示されます';
+      } else {
+        list = SHOPS.filter(s => isNextYear(s.id));
+        emptyMsg = '<div class="big">🌱</div>「来年も行きたい」と思った出店を<br>モーダルからチェックして残しておきましょう';
+      }
+
+      /* wishlist サブタブのみ「マップで動線確認」ボタンを出す（既存挙動の維持） */
+      if (sub === 'wishlist' && list.length) {
+        const planBtn = el('button', 'plan-map-btn',
+          '🗺️ 行きたい出店をマップで動線確認');
+        planBtn.onclick = () => {
+          state.planMode = true;
+          state.highlightShop = null;
+          state.selectedZone = null;
+          switchView('map');
+        };
+        root.appendChild(planBtn);
+      }
+
+      /* nextyear サブタブの最上段：「今年の心残り」サジェスト
+         fav に入れたが visited に入っていない出店を抽出 → ワンタップで来年に一括追加 */
+      if (sub === 'nextyear') {
+        const regrets = SHOPS.filter(s =>
+          isFav('shops', s.id) && !isVisited(s.id) && !isNextYear(s.id));
+        if (regrets.length) {
+          const rec = el('div', 'regret-card');
+          rec.innerHTML =
+            '<div class="regret-card__head">💭 今年の心残り：' + regrets.length + ' 店</div>' +
+            '<div class="regret-card__sub">行きたかったけれど「行った」にチェックされていない出店です。ワンタップで来年リストに追加できます。</div>';
+          const addAll = el('button', 'btn btn--primary regret-card__btn',
+            '🌱 ' + regrets.length + ' 店をまとめて来年リストへ');
+          addAll.onclick = () => {
+            regrets.forEach(s => {
+              if (!isNextYear(s.id)) state.nextYear.push(s.id);
+            });
+            saveNextYear();
+            toast(regrets.length + ' 店を来年リストに追加');
+            renderMyplan();
+          };
+          rec.appendChild(addAll);
+          root.appendChild(rec);
+        }
+      }
+
+      if (!list.length) {
+        root.appendChild(el('div', 'empty', emptyMsg));
+        appendMyplanSettings(root);
         return;
       }
-      const planBtn = el('button', 'plan-map-btn',
-        '🗺️ 行きたい出店をマップで動線確認');
-      planBtn.onclick = () => {
-        state.planMode = true;
-        state.highlightShop = null;
-        state.selectedZone = null;
-        switchView('map');
-      };
-      root.appendChild(planBtn);
       const g = el('div', 'list-grid');
-      favs.forEach(s => {
-        const t = el('div', 'tile',
+      list.forEach(s => {
+        const t = el('div', 'tile' + (isVisited(s.id) ? ' tile--visited' : ''),
           `<div class="tile__cat">${s.catIcon}</div>
            <div class="tile__name">${esc(s.name)}</div>
            <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
-           <button class="tile__fav">★</button>`);
+           ${(() => {
+             const badges = [
+               isVisited(s.id) ? '<span class="tile__badge tile__badge--visited">✅</span>' : '',
+               hasNote(s.id) ? '<span class="tile__badge tile__badge--memo">📝</span>' : '',
+               isNextYear(s.id) ? '<span class="tile__badge tile__badge--nextyear">🌱</span>' : ''
+             ].filter(Boolean).join('');
+             return badges ? `<div class="tile__badges">${badges}</div>` : '';
+           })()}
+           <button class="tile__fav">${isFav('shops', s.id) ? '★' : '☆'}</button>`);
         t.onclick = () => openShop(s.id);
         t.querySelector('.tile__fav').onclick = e => {
           e.stopPropagation(); toggleFav('shops', s.id); saveFav();
-          toast('マイプランから削除'); renderMyplan(); updateTabBadge();
+          toast(isFav('shops', s.id) ? '★ 行きたいに追加' : '行きたいから削除');
+          renderMyplan(); updateTabBadge();
         };
+        /* visited サブタブではメモの先頭2行を併記（タグ＋本文の冒頭） */
+        if (sub === 'visited') {
+          const n = getNote(s.id);
+          if (n.tags.length || n.body) {
+            const m = el('div', 'tile__notepreview');
+            const tagLine = n.tags.length
+              ? '<div class="tile__notetags">' + n.tags.slice(0, 3).map(x => '#' + esc(x)).join(' ') + '</div>'
+              : '';
+            const bodyLine = n.body
+              ? '<div class="tile__notebody">' + esc(n.body.replace(/\n+/g, ' ').slice(0, 60)) + (n.body.length > 60 ? '…' : '') + '</div>'
+              : '';
+            m.innerHTML = tagLine + bodyLine;
+            t.appendChild(m);
+          }
+        }
         g.appendChild(t);
       });
       root.appendChild(g);
+      appendMyplanSettings(root);
     }
+  }
+
+  /* マイプラン最下段の「設定」セクション：エクスポート／インポート */
+  function appendMyplanSettings(root) {
+    const wrap = el('div', 'myplan-settings');
+    wrap.innerHTML = '<div class="myplan-settings__head">⚙️ データの保存</div>' +
+      '<div class="myplan-settings__sub">記録は端末のブラウザに保存されています。機種変更・ブラウザデータ消去に備えてバックアップを取れます。</div>';
+    const btnRow = el('div', 'myplan-settings__btns');
+    const exportBtn = el('button', 'btn btn--ghost', '⬇️ JSONで書き出す');
+    exportBtn.onclick = exportMyplan;
+    const importBtn = el('button', 'btn btn--ghost', '⬆️ JSONを読み込む');
+    importBtn.onclick = () => $('#myplanImportFile').click();
+    btnRow.appendChild(exportBtn);
+    btnRow.appendChild(importBtn);
+    wrap.appendChild(btnRow);
+    /* 隠しファイル入力 */
+    const fileInput = el('input', '');
+    fileInput.type = 'file';
+    fileInput.accept = '.json,application/json';
+    fileInput.id = 'myplanImportFile';
+    fileInput.style.display = 'none';
+    fileInput.onchange = (e) => importMyplan(e.target.files && e.target.files[0]);
+    wrap.appendChild(fileInput);
+    root.appendChild(wrap);
+  }
+
+  /* 全マイプランデータを1ファイルにまとめてダウンロード */
+  function exportMyplan() {
+    const payload = {
+      version: 1,
+      app: 'morimichi2026',
+      exportedAt: new Date().toISOString(),
+      data: {
+        fav: state.fav,
+        visited: state.visited,
+        nextYear: state.nextYear,
+        notes: state.notes,
+        checks: state.checks
+      }
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const yyyymmdd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'morimichi2026-myplan-' + yyyymmdd + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    toast('マイプランを書き出しました');
+  }
+
+  /* JSONファイルを読み込み、現在のデータを上書き */
+  function importMyplan(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const obj = JSON.parse(e.target.result);
+        if (!obj || obj.app !== 'morimichi2026' || obj.version !== 1 || !obj.data) {
+          alert('このファイルはマイプランの書き出しファイルではないようです。');
+          return;
+        }
+        if (!confirm('現在の記録を、ファイルの内容で上書きします。よろしいですか？\n（書き出し日時：' +
+                     (obj.exportedAt || '不明') + '）')) return;
+        const d = obj.data;
+        if (d.fav && typeof d.fav === 'object' &&
+            Array.isArray(d.fav.artists) && Array.isArray(d.fav.shops)) state.fav = d.fav;
+        if (Array.isArray(d.visited)) state.visited = d.visited;
+        if (Array.isArray(d.nextYear)) state.nextYear = d.nextYear;
+        if (d.notes && typeof d.notes === 'object' && !Array.isArray(d.notes)) state.notes = d.notes;
+        if (d.checks && typeof d.checks === 'object' && !Array.isArray(d.checks)) state.checks = d.checks;
+        sanitizeState();
+        saveFav(); saveVisited(); saveNextYear(); saveNotes();
+        save('mm2026_checks', state.checks);
+        toast('マイプランを読み込みました');
+        renderMyplan(); updateTabBadge();
+        if (state.view === 'shops') renderShopList();
+      } catch (err) {
+        alert('ファイルを読み込めませんでした：' + (err && err.message ? err.message : err));
+      }
+    };
+    reader.readAsText(file);
   }
 
   /* ============================================================
@@ -1577,6 +1818,13 @@
     const s = SHOPS.find(x => x.id === id); if (!s) return;
     pushRecent('shops', s.id);
     const faved = isFav('shops', s.id);
+    const visited = isVisited(s.id);
+    const nextYr = isNextYear(s.id);
+    const note = getNote(s.id);
+    const tagsHtml = NOTE_TAGS.map(t => {
+      const on = note.tags.indexOf(t) !== -1;
+      return `<button type="button" class="chip ${on ? 'active' : ''}" data-note-tag="${esc(t)}">${esc(t)}</button>`;
+    }).join('');
     openModal(
       `<div class="modal__handle"></div>
        <div class="modal__cat">${s.catIcon}</div>
@@ -1600,9 +1848,17 @@
               '会場内の詳しい位置は会場マップでご確認ください。')
            : 'この出店は公式サイトで追加確認した店舗です。会場マップ上の正確な位置は未取得のため、現地では「' +
              esc(shortName(s.zoneName)) + '」エリアの案内・公式マップでご確認ください。'}</p>
-       <div class="modal__btns">
-         <button class="btn btn--fav ${faved ? 'on' : ''}" id="sFav">
-           ${faved ? '★ 登録済み' : '☆ マイプランに追加'}</button></div>
+       <div class="modal__btns modal__btns--triple">
+         <button class="btn btn--fav ${faved ? 'on' : ''}" id="sFav" title="マイプランに追加">${faved ? '★ 行きたい' : '☆ 行きたい'}</button>
+         <button class="btn btn--visited ${visited ? 'on' : ''}" id="sVisited" title="行った／訪問済み">${visited ? '✅ 行った' : '⬜ 行った'}</button>
+         <button class="btn btn--nextyear ${nextYr ? 'on' : ''}" id="sNextYr" title="来年も行きたい">${nextYr ? '🌱 来年' : '🌿 来年'}</button>
+       </div>
+       <div class="note-block">
+         <div class="note-block__head">📝 メモ・おすすめ</div>
+         <div class="chips note-block__tags" id="sNoteTags">${tagsHtml}</div>
+         <textarea class="note-block__body" id="sNoteBody" maxlength="500" placeholder="例：◯◯がおすすめ／また来たい／開場すぐ売り切れ など（500字まで）">${esc(note.body)}</textarea>
+         <div class="note-block__count"><span id="sNoteCount">${note.body.length}</span> / 500</div>
+       </div>
        ${s.hasMapPos ? `<div class="modal__btns">
          <button class="btn btn--primary" id="sMap">🗺️ マップで店名・エリアを見る</button></div>` : ''}`);
     $('#sFav').onclick = () => {
@@ -1611,6 +1867,44 @@
       if (state.view === 'shops') renderShopList();
       if (state.view === 'myplan') renderMyplan();
     };
+    $('#sVisited').onclick = () => {
+      toast(toggleVisited(s.id) ? '✅ 行ったに追加' : '行ったから削除');
+      saveVisited(); openShop(id);
+      if (state.view === 'shops') renderShopList();
+      if (state.view === 'myplan') renderMyplan();
+    };
+    $('#sNextYr').onclick = () => {
+      toast(toggleNextYear(s.id) ? '🌱 来年に追加' : '来年から削除');
+      saveNextYear(); openShop(id);
+      if (state.view === 'myplan') renderMyplan();
+    };
+    /* メモ：タグはクリックで toggle、本文は入力で debounce 保存 */
+    $$('#sNoteTags .chip').forEach(c => c.onclick = (e) => {
+      e.preventDefault();
+      const t = c.getAttribute('data-note-tag');
+      const cur = getNote(s.id);
+      const i = cur.tags.indexOf(t);
+      if (i === -1) cur.tags.push(t); else cur.tags.splice(i, 1);
+      setNote(s.id, cur);
+      c.classList.toggle('active');
+      scheduleSaveNotes(0);  /* タグ toggle は即保存 */
+      if (state.view === 'shops') renderShopList();
+      if (state.view === 'myplan') renderMyplan();
+    });
+    const sNoteBody = $('#sNoteBody');
+    const sNoteCount = $('#sNoteCount');
+    if (sNoteBody) {
+      sNoteBody.oninput = () => {
+        const v = sNoteBody.value.slice(0, 500);
+        if (sNoteCount) sNoteCount.textContent = String(v.length);
+        const cur = getNote(s.id);
+        cur.body = v;
+        setNote(s.id, cur);
+        scheduleSaveNotes(500);
+      };
+      /* モーダルを閉じる前に未確定の保存を確定させる（メモ即時保存の保険） */
+      sNoteBody.onblur = () => { scheduleSaveNotes(0); };
+    }
     const sMap = $('#sMap');
     if (sMap) sMap.onclick = () => {
       closeModal();

@@ -533,6 +533,76 @@ main{
 .btn--ghost{background:var(--card);color:var(--ink);}
 .btn--fav{background:var(--teal);color:#fff;}
 .btn--fav.on{background:var(--ok);}
+/* 行った／来年ボタン：fav と並んだときに色で識別できるよう、
+   非アクティブはニュートラルなcard色、アクティブは独自色に切り替える */
+.btn--visited{background:var(--card);color:var(--ink);}
+.btn--visited.on{background:#5b8a3a;color:#fff;}
+.btn--nextyear{background:var(--card);color:var(--ink);}
+.btn--nextyear.on{background:#c98a2b;color:#fff;}
+/* 3ボタン横並びはモバイルだと文字が詰まるため、font-size をやや絞る */
+.modal__btns--triple .btn{padding:11px 6px;font-size:12px;}
+
+/* タイル右下のバッジ（visited／memo／nextyear を縦に並べる） */
+.tile__badges{
+  position:absolute;bottom:4px;right:4px;display:flex;flex-direction:column;
+  gap:2px;align-items:flex-end;pointer-events:none;
+}
+.tile__badge{
+  font-size:13px;line-height:1;background:var(--card);
+  border:2px solid var(--ink);border-radius:50%;width:22px;height:22px;
+  display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:1px 1px 0 var(--ink);
+}
+/* visited 状態のタイルは背景をうっすら緑にして「行った感」を出す */
+.tile--visited{background:linear-gradient(180deg,#f3f8ec 0%,var(--card) 60%);}
+
+/* モーダル：メモブロック */
+.note-block{
+  margin-top:12px;padding:10px;border:2px solid var(--ink);border-radius:10px;
+  background:var(--card);box-shadow:var(--hard);
+}
+.note-block__head{font-size:12px;font-weight:800;margin-bottom:6px;color:var(--ink);}
+.note-block__tags{margin:0 -2px 6px;}
+.note-block__body{
+  width:100%;min-height:84px;padding:8px;border-radius:8px;
+  border:2px solid var(--ink);background:#fff;font-size:13px;line-height:1.55;
+  resize:vertical;font-family:inherit;
+}
+.note-block__body:focus{outline:2px solid var(--red);outline-offset:1px;}
+.note-block__count{
+  font-size:10.5px;color:var(--sub);text-align:right;margin-top:4px;font-weight:700;
+}
+
+/* マイプラン：第2層チップ群（行きたい／行った／来年） */
+.chips--sub{margin-bottom:10px;}
+
+/* マイプラン：visited サブタブのタイル本文プレビュー（メモの抜粋） */
+.tile__notepreview{
+  margin-top:6px;padding-top:6px;border-top:1.5px dashed var(--sub);
+  display:flex;flex-direction:column;gap:3px;
+}
+.tile__notetags{font-size:10px;color:var(--red);font-weight:800;letter-spacing:.02em;}
+.tile__notebody{font-size:11px;color:var(--ink);font-weight:600;line-height:1.4;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+
+/* マイプラン：「今年の心残り」サジェストカード
+   背景が淡いベージュ固定なので、文字色もダークモードに引きずられない固定値で持つ。 */
+.regret-card{
+  margin:8px 0 14px;padding:12px;border:2.5px solid #1a1a1a;border-radius:12px;
+  background:#fff6e9;box-shadow:var(--hard);color:#1a1a1a;
+}
+.regret-card__head{font-size:13px;font-weight:800;margin-bottom:4px;color:#1a1a1a;}
+.regret-card__sub{font-size:11px;color:#5a5a5a;font-weight:600;line-height:1.5;margin-bottom:8px;}
+.regret-card__btn{width:100%;}
+
+/* マイプラン：設定セクション（エクスポート／インポート） */
+.myplan-settings{
+  margin-top:28px;padding:14px;border:2px dashed var(--ink);border-radius:10px;
+  background:var(--card);
+}
+.myplan-settings__head{font-size:13px;font-weight:800;margin-bottom:4px;}
+.myplan-settings__sub{font-size:11px;color:var(--sub);font-weight:600;line-height:1.55;margin-bottom:10px;}
+.myplan-settings__btns{display:flex;gap:9px;}
 
 /* ---------- ボトムタブ ---------- */
 .tabbar{
