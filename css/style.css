@@ -660,6 +660,21 @@ body.night .chips--sub .chip.active{background:var(--red);color:#ffffff;border-c
 body.night .regret-card{background:#3a2f24;color:#f1ede3;}
 body.night .regret-card__sub{color:#c8b9a3;}
 
+/* 画像プレビュー（マイプランカード書き出し用モーダル） */
+.image-preview__title{
+  font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--sub);
+  margin:2px 0 8px;text-transform:none;
+}
+.image-preview{
+  border:2px solid var(--ink);border-radius:8px;overflow:hidden;
+  background:#F2EBDC;box-shadow:var(--hard);margin-bottom:10px;
+}
+.image-preview__img{display:block;width:100%;height:auto;}
+.image-preview__hint{
+  font-size:11px;color:var(--sub);font-weight:600;line-height:1.55;
+  margin:0 4px 10px;
+}
+
 /* マイプラン：設定セクション（エクスポート／インポート） */
 .myplan-settings{
   margin-top:28px;padding:14px;border:2px dashed var(--ink);border-radius:10px;
