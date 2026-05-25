@@ -492,38 +492,9 @@
        <div class="countdown" data-mode="${st.mode}">${countdownInner(st)}</div>`;
     root.appendChild(hero);
 
-    /* 非公式であることの明示（出所混同を避けるための注意書き） */
-    root.appendChild(el('div', 'disclaimer',
-      'このアプリは森、道、市場のファンが個人的に制作した<b>非公式ガイド</b>です。' +
-      '主催・運営とは一切関係ありません。日程・出店・タイムテーブル等の最新かつ正確な情報は、' +
-      '必ず <a href="' + FESTIVAL.official +
-      '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
-
-    /* （マイページ拡張のお知らせバナーは撤去。
-       下段の「MY PAGE」4セル紹介セクションに統合した。） */
-
-    /* クイック */
-    root.appendChild(secTitle('クイックメニュー', 'MENU'));
-    const qg = el('div', 'quick-grid');
-    [['🗺️', 'マップ', () => switchView('map')],
-     ['🕒', 'タイテ', () => switchView('timetable')],
-     ['🎤', '出演者', () => switchView('artists')],
-     ['🛍️', '出店', () => switchView('shops')],
-     ['⭐', 'マイプラン', () => switchView('myplan')],
-     ['🚌', 'アクセス', () => jump('accessCard')],
-     ['☔', '天気', () => openUrl(FESTIVAL.weather)],
-     ['🪩', 'アフターパーティ', () => openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/')]
-    ].forEach(q => {
-      const b = el('button', 'quick-btn',
-        `<div class="ico">${q[0]}</div><div class="lbl">${q[1]}</div>`);
-      b.onclick = q[2]; qg.appendChild(b);
-    });
-    root.appendChild(qg);
-
-    /* マイページ機能の紹介セクション。
+    /* マイページ機能の紹介セクション（ヒーロー直後・最優先で見せる）。
        会期後の振り返り体験（めぐった／来年こそは／メモ／画像シェア）を
-       初見ユーザーにも分かるように説明。マイプランボタンの真上に置くことで、
-       「クイックメニューのマイプランで何ができるか」を即座に伝える。 */
+       初見ユーザーにも分かるように説明。 */
     const intro = el('div', 'myplan-intro');
     intro.innerHTML =
       '<div class="myplan-intro__kicker">MY PAGE</div>' +
@@ -554,6 +525,31 @@
     introBtn.onclick = () => switchView('myplan');
     intro.appendChild(introBtn);
     root.appendChild(intro);
+
+    /* クイック */
+    root.appendChild(secTitle('クイックメニュー', 'MENU'));
+    const qg = el('div', 'quick-grid');
+    [['🗺️', 'マップ', () => switchView('map')],
+     ['🕒', 'タイテ', () => switchView('timetable')],
+     ['🎤', '出演者', () => switchView('artists')],
+     ['🛍️', '出店', () => switchView('shops')],
+     ['⭐', 'マイプラン', () => switchView('myplan')],
+     ['🚌', 'アクセス', () => jump('accessCard')],
+     ['☔', '天気', () => openUrl(FESTIVAL.weather)],
+     ['🪩', 'アフターパーティ', () => openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/')]
+    ].forEach(q => {
+      const b = el('button', 'quick-btn',
+        `<div class="ico">${q[0]}</div><div class="lbl">${q[1]}</div>`);
+      b.onclick = q[2]; qg.appendChild(b);
+    });
+    root.appendChild(qg);
+
+    /* 非公式であることの明示（注意書きはクイックメニューの後に配置） */
+    root.appendChild(el('div', 'disclaimer',
+      'このアプリは森、道、市場のファンが個人的に制作した<b>非公式ガイド</b>です。' +
+      '主催・運営とは一切関係ありません。日程・出店・タイムテーブル等の最新かつ正確な情報は、' +
+      '必ず <a href="' + FESTIVAL.official +
+      '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
 
     /* アクセス */
     root.appendChild(secTitle('会場アクセス', 'ACCESS'));
