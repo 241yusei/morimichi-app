@@ -105,13 +105,23 @@
     };
   }
   function setNote(id, obj) {
-    const tags = Array.isArray(obj.tags) ? obj.tags : [];
-    const body = (typeof obj.body === 'string' ? obj.body : '').slice(0, 500);
+    /* タグは重複を排除しておく（インポート時の汚染データ対策も兼ねる） */
+    const tags = Array.isArray(obj.tags) ? [...new Set(obj.tags.filter(t => typeof t === 'string'))] : [];
+    /* 500字制限は「Unicode コードポイント単位」でカウントする。
+       UTF-16 単位（s.length）だとサロゲートペアの絵文字が2でカウントされ、
+       250 字付近で勝手に切られてしまうため。 */
+    let body = typeof obj.body === 'string' ? obj.body : '';
+    const arr = [...body];
+    if (arr.length > 500) body = arr.slice(0, 500).join('');
     if (tags.length === 0 && body.length === 0) {
       delete state.notes[id];
     } else {
       state.notes[id] = { tags, body, updatedAt: Date.now() };
     }
+  }
+  /* 文字数カウント（コードポイント単位） */
+  function noteBodyLen(body) {
+    return typeof body === 'string' ? [...body].length : 0;
   }
   function hasNote(id) {
     const n = state.notes[id];
@@ -119,6 +129,30 @@
   }
   /* メモ用の固定タグ。順序は表示順。 */
   const NOTE_TAGS = ['おすすめ', 'また来たい', '待ち時間注意', '売切れ早い', '写真映え'];
+  /* このアプリの公開URL（シェア時に使う） */
+  const APP_URL = 'https://nagoya-ningen.github.io/morimichi-app/';
+  /* シェアヘルパ。Web Share API → clipboard.writeText → prompt の段階フォールバック。 */
+  async function shareOrCopy({ title, text, url }) {
+    const payload = { title, text, url };
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        return 'shared';
+      }
+    } catch (e) { /* ユーザーキャンセル等はサイレントに */ }
+    /* Web Share 非対応 or キャンセル後 → クリップボードコピー */
+    const composed = [text, url].filter(Boolean).join('\n');
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(composed);
+        toast('リンクをコピーしました');
+        return 'copied';
+      }
+    } catch (e) {}
+    /* 最終フォールバック：prompt で見せる */
+    try { window.prompt('テキストをコピーしてください', composed); } catch (e) {}
+    return 'fallback';
+  }
   /* メモ入力の debounce 用 timer 保持 */
   let _noteSaveTimer = null;
   function scheduleSaveNotes(delay) {
@@ -512,9 +546,14 @@
        <div class="txt"><b>${esc(e.title)}</b><p>${esc(e.text)}</p></div></div>`).join('');
     root.appendChild(ic);
 
-    /* 持ち物チェックリスト */
+    /* 持ち物チェックリスト：デフォルト折りたたみ。チェック数があるときだけサマリーで件数表示 */
     root.appendChild(secTitle('持ち物チェックリスト', 'CHECKLIST'));
-    const cc = el('div', 'card checklist');
+    const doneCount = Object.values(state.checks).filter(Boolean).length;
+    const totalCount = INFO.checklist.length;
+    const cc = el('details', 'card checklist checklist--collapsible');
+    const summary = el('summary', 'checklist__summary',
+      '<span>持ち物（' + doneCount + ' / ' + totalCount + ' 完了）</span><span class="tgl">＋</span>');
+    cc.appendChild(summary);
     INFO.checklist.forEach((item, i) => {
       const id = 'chk' + i, done = !!state.checks[id];
       const lab = el('label', done ? 'done' : '',
@@ -523,8 +562,16 @@
         state.checks[id] = e.target.checked;
         save('mm2026_checks', state.checks);
         lab.classList.toggle('done', e.target.checked);
+        /* 件数表示を更新 */
+        const dc = Object.values(state.checks).filter(Boolean).length;
+        const sp = summary.querySelector('span');
+        if (sp) sp.textContent = '持ち物（' + dc + ' / ' + totalCount + ' 完了）';
       };
       cc.appendChild(lab);
+    });
+    cc.addEventListener('toggle', () => {
+      const t = cc.querySelector('.tgl');
+      if (t) t.textContent = cc.open ? '−' : '＋';
     });
     root.appendChild(cc);
 
@@ -1599,8 +1646,23 @@
     }
   }
 
-  /* マイプラン最下段の「設定」セクション：エクスポート／インポート */
+  /* マイプラン最下段の「設定」セクション：シェア／エクスポート／インポート */
   function appendMyplanSettings(root) {
+    /* シェア／画像書き出しは「もっと使いたい人」向けのアクション。
+       JSON 入出力（バックアップ）と段を分けて見せる。 */
+    const shareWrap = el('div', 'myplan-settings');
+    shareWrap.innerHTML = '<div class="myplan-settings__head">↗ マイプランをシェア</div>' +
+      '<div class="myplan-settings__sub">行きたい・行った・来年の総数を、画像 or テキストで友達に。</div>';
+    const shareRow = el('div', 'myplan-settings__btns');
+    const imgBtn = el('button', 'btn btn--ghost', '📸 画像で書き出す');
+    imgBtn.onclick = exportMyplanImage;
+    const textBtn = el('button', 'btn btn--ghost', '↗ テキストでシェア');
+    textBtn.onclick = shareMyplanText;
+    shareRow.appendChild(imgBtn);
+    shareRow.appendChild(textBtn);
+    shareWrap.appendChild(shareRow);
+    root.appendChild(shareWrap);
+
     const wrap = el('div', 'myplan-settings');
     wrap.innerHTML = '<div class="myplan-settings__head">⚙️ データの保存</div>' +
       '<div class="myplan-settings__sub">記録は端末のブラウザに保存されています。機種変更・ブラウザデータ消去に備えてバックアップを取れます。</div>';
@@ -1621,6 +1683,125 @@
     fileInput.onchange = (e) => importMyplan(e.target.files && e.target.files[0]);
     wrap.appendChild(fileInput);
     root.appendChild(wrap);
+  }
+
+  /* テキストシェア：マイプランの総数を読みやすい1行にまとめてシェア */
+  function shareMyplanText() {
+    const w = state.fav.shops.length;
+    const v = state.visited.length;
+    const n = state.nextYear.length;
+    const lines = [
+      '私の森道市場2026マイプラン',
+      '⭐ 行きたい ' + w + ' 店 / ✅ 行った ' + v + ' 店 / 🌱 来年 ' + n + ' 店'
+    ];
+    shareOrCopy({
+      title: '私の森道市場2026',
+      text: lines.join('\n'),
+      url: APP_URL
+    });
+  }
+
+  /* マイプランカード画像を 1080x1920（9:16）で生成し、ダウンロード or 共有 */
+  function exportMyplanImage() {
+    const W = 1080, H = 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    /* 背景：アプリのテーマに合わせて、上 赤 / 下 ペーパー */
+    ctx.fillStyle = '#FAFAF7';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#de1815';
+    ctx.fillRect(0, 0, W, 420);
+    /* ヘッダーテキスト */
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 64px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('森、道、市場 2026', 60, 100);
+    ctx.font = '500 38px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+    ctx.fillText('私のマイプラン', 60, 195);
+    ctx.font = '500 30px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.fillText('5.22 FRI – 5.24 SUN / 蒲郡 ラグーナビーチ', 60, 270);
+
+    /* 統計の3カード */
+    const stats = [
+      ['⭐', '行きたい', state.fav.shops.length, '#fff', '#de1815'],
+      ['✅', '行った',   state.visited.length, '#fff', '#5b8a3a'],
+      ['🌱', '来年',     state.nextYear.length, '#fff', '#c98a2b']
+    ];
+    const cardW = 300, cardH = 240, gap = 30, baseX = 60, baseY = 470;
+    stats.forEach((s, i) => {
+      const x = baseX + i * (cardW + gap);
+      ctx.fillStyle = s[3];
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 6;
+      roundRect(ctx, x, baseY, cardW, cardH, 24);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = '700 56px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+      ctx.fillText(s[0], x + 28, baseY + 24);
+      ctx.font = '700 34px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+      ctx.fillText(s[1], x + 28, baseY + 100);
+      ctx.font = '900 96px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+      ctx.fillStyle = s[4];
+      ctx.fillText(String(s[2]), x + 28, baseY + 138);
+    });
+
+    /* リストヘッダ */
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = '700 36px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+    ctx.fillText('🛍️ 行きたい出店 ' + state.fav.shops.length + ' 店', 60, 800);
+
+    /* 行きたい出店一覧（上位 12 まで） */
+    const wishlistShops = SHOPS.filter(s => isFav('shops', s.id)).slice(0, 12);
+    ctx.font = '500 30px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+    wishlistShops.forEach((s, i) => {
+      const y = 880 + i * 52;
+      const v = isVisited(s.id) ? '✅ ' : '';
+      const ny = isNextYear(s.id) ? '🌱 ' : '';
+      const name = (v + ny + s.name).slice(0, 32);
+      ctx.fillText('・' + name, 80, y);
+    });
+    if (state.fav.shops.length > 12) {
+      ctx.fillStyle = '#5a5a5a';
+      ctx.font = '500 26px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+      ctx.fillText('… ほか ' + (state.fav.shops.length - 12) + ' 店', 80, 880 + 12 * 52 + 20);
+    }
+
+    /* フッター */
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = '500 26px system-ui, -apple-system, "Hiragino Sans", sans-serif';
+    ctx.fillText('森道ガイド（非公式）', 60, H - 100);
+    ctx.fillStyle = '#5a5a5a';
+    ctx.fillText(APP_URL, 60, H - 60);
+
+    canvas.toBlob((blob) => {
+      if (!blob) { toast('画像の生成に失敗しました'); return; }
+      const file = new File([blob], 'morimichi2026-myplan.png', { type: 'image/png' });
+      /* navigator.share でファイル共有できる端末ならそのまま共有 */
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: '私の森道市場2026', text: '私のマイプラン' })
+          .catch(() => {/* キャンセル等は無視 */});
+        return;
+      }
+      /* 非対応：ダウンロード */
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'morimichi2026-myplan.png';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+      toast('画像をダウンロードしました');
+    }, 'image/png');
+  }
+  /* 角丸矩形ヘルパ（Canvas） */
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   /* 全マイプランデータを1ファイルにまとめてダウンロード */
@@ -1649,7 +1830,8 @@
     toast('マイプランを書き出しました');
   }
 
-  /* JSONファイルを読み込み、現在のデータを上書き */
+  /* JSONファイルを読み込み、現在のデータを上書き
+     サニタイズは要素レベルまで（破損データ部分はスキップして残りを採用）。 */
   function importMyplan(file) {
     if (!file) return;
     const reader = new FileReader();
@@ -1663,16 +1845,42 @@
         if (!confirm('現在の記録を、ファイルの内容で上書きします。よろしいですか？\n（書き出し日時：' +
                      (obj.exportedAt || '不明') + '）')) return;
         const d = obj.data;
-        if (d.fav && typeof d.fav === 'object' &&
-            Array.isArray(d.fav.artists) && Array.isArray(d.fav.shops)) state.fav = d.fav;
-        if (Array.isArray(d.visited)) state.visited = d.visited;
-        if (Array.isArray(d.nextYear)) state.nextYear = d.nextYear;
-        if (d.notes && typeof d.notes === 'object' && !Array.isArray(d.notes)) state.notes = d.notes;
-        if (d.checks && typeof d.checks === 'object' && !Array.isArray(d.checks)) state.checks = d.checks;
+        let skipped = 0;
+        /* 文字列配列ヘルパ：要素単位で型チェック、不正はスキップ */
+        const strArr = (a) => {
+          if (!Array.isArray(a)) { skipped++; return null; }
+          const out = []; for (const x of a) { if (typeof x === 'string') out.push(x); else skipped++; }
+          return out;
+        };
+        /* fav は {artists:[], shops:[]} 形式を強要 */
+        if (d.fav && typeof d.fav === 'object' && !Array.isArray(d.fav)) {
+          const fa = strArr(d.fav.artists), fs = strArr(d.fav.shops);
+          if (fa && fs) state.fav = { artists: fa, shops: fs };
+          else skipped++;
+        }
+        /* visited / nextYear は文字列配列 */
+        const vis = strArr(d.visited); if (vis) state.visited = vis;
+        const ny  = strArr(d.nextYear); if (ny)  state.nextYear = ny;
+        /* notes は {[id]: NoteObj}。各 NoteObj を setNote 経由でサニタイズ */
+        if (d.notes && typeof d.notes === 'object' && !Array.isArray(d.notes)) {
+          state.notes = {};
+          for (const id of Object.keys(d.notes)) {
+            const n = d.notes[id];
+            if (n && typeof n === 'object' && !Array.isArray(n)) {
+              setNote(id, n);
+            } else { skipped++; }
+          }
+        }
+        /* checks はオブジェクト */
+        if (d.checks && typeof d.checks === 'object' && !Array.isArray(d.checks)) {
+          state.checks = d.checks;
+        }
         sanitizeState();
         saveFav(); saveVisited(); saveNextYear(); saveNotes();
         save('mm2026_checks', state.checks);
-        toast('マイプランを読み込みました');
+        toast(skipped > 0
+          ? 'マイプランを読み込みました（' + skipped + '件の不正データはスキップ）'
+          : 'マイプランを読み込みました');
         renderMyplan(); updateTabBadge();
         if (state.view === 'shops') renderShopList();
       } catch (err) {
@@ -1713,6 +1921,10 @@
   function closeModal(fromPop) {
     const bg = $('#modalBg');
     if (!bg.classList.contains('open')) return;
+    /* メモ入力中に閉じられても未確定分を確実に保存する。
+       _noteSaveTimer が走っていればキャンセルして即時 save。 */
+    if (_noteSaveTimer) { clearTimeout(_noteSaveTimer); _noteSaveTimer = null; }
+    saveNotes();
     bg.classList.remove('open');
     if (modalOpen && !fromPop) {
       modalOpen = false;
@@ -1870,10 +2082,13 @@
          <div class="note-block__head">📝 メモ・おすすめ</div>
          <div class="chips note-block__tags" id="sNoteTags">${tagsHtml}</div>
          <textarea class="note-block__body" id="sNoteBody" maxlength="500" placeholder="例：◯◯がおすすめ／また来たい／開場すぐ売り切れ など（500字まで）">${esc(note.body)}</textarea>
-         <div class="note-block__count"><span id="sNoteCount">${note.body.length}</span> / 500</div>
+         <div class="note-block__count"><span id="sNoteCount">${noteBodyLen(note.body)}</span> / 500</div>
        </div>
        ${s.hasMapPos ? `<div class="modal__btns">
-         <button class="btn btn--primary" id="sMap">🗺️ マップで店名・エリアを見る</button></div>` : ''}`);
+         <button class="btn btn--primary" id="sMap">🗺️ マップで店名・エリアを見る</button></div>` : ''}
+       <div class="modal__btns">
+         <button class="btn btn--ghost" id="sShare">↗ この出店をシェア</button>
+       </div>`);
     $('#sFav').onclick = () => {
       toast(toggleFav('shops', s.id) ? '★ マイプランに追加' : 'マイプランから削除');
       saveFav(); openShop(id); updateTabBadge();
@@ -1897,10 +2112,13 @@
       const t = c.getAttribute('data-note-tag');
       const cur = getNote(s.id);
       const i = cur.tags.indexOf(t);
-      if (i === -1) cur.tags.push(t); else cur.tags.splice(i, 1);
+      const added = i === -1;
+      if (added) cur.tags.push(t); else cur.tags.splice(i, 1);
       setNote(s.id, cur);
       c.classList.toggle('active');
       scheduleSaveNotes(0);  /* タグ toggle は即保存 */
+      /* 保存されたことが伝わるよう toast を即出す */
+      toast((added ? '＃' : '× ') + t);
       if (state.view === 'shops') renderShopList();
       if (state.view === 'myplan') renderMyplan();
     });
@@ -1908,8 +2126,11 @@
     const sNoteCount = $('#sNoteCount');
     if (sNoteBody) {
       sNoteBody.oninput = () => {
-        const v = sNoteBody.value.slice(0, 500);
-        if (sNoteCount) sNoteCount.textContent = String(v.length);
+        /* コードポイント単位で 500 字に切り詰め、絵文字の二重カウントを防ぐ */
+        const arr = [...sNoteBody.value];
+        let v = arr.length > 500 ? arr.slice(0, 500).join('') : sNoteBody.value;
+        if (v !== sNoteBody.value) sNoteBody.value = v;
+        if (sNoteCount) sNoteCount.textContent = String(noteBodyLen(v));
         const cur = getNote(s.id);
         cur.body = v;
         setNote(s.id, cur);
@@ -1926,6 +2147,14 @@
       state.mapShopQuery = '';
       switchView('map');
       toast('マップ上で「' + s.name + '」をハイライト');
+    };
+    const sShare = $('#sShare');
+    if (sShare) sShare.onclick = () => {
+      shareOrCopy({
+        title: s.name + ' @森道市場2026',
+        text: '『' + s.name + '』@ ' + shortName(s.zoneName) + ' — 森道市場2026 非公式ガイド',
+        url: APP_URL + '#shop=' + encodeURIComponent(s.id)
+      });
     };
   }
 
@@ -1975,6 +2204,18 @@
     });
     switchView('home');
     updateTabBadge();
+    /* シェアURL（#shop=sN）で来訪した場合、該当出店のモーダルを自動で開く。
+       存在しないIDは無視。お礼ポップアップとの競合を避けるため、ポップアップ評価より先に処理。 */
+    try {
+      const h = (location.hash || '').replace(/^#/, '');
+      const m = /^shop=(.+)$/.exec(h);
+      if (m) {
+        const target = decodeURIComponent(m[1]);
+        if (SHOPS.some(s => s.id === target)) {
+          setTimeout(() => openShop(target), 200);
+        }
+      }
+    } catch (e) {}
     /* 初期描画が落ち着いてからお礼ポップアップを評価（一度きり表示） */
     setTimeout(showThanksPopupIfFirst, 300);
   }

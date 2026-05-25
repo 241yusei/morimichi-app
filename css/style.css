@@ -62,15 +62,18 @@ body.night :focus-visible{outline-color:var(--teal-l);}
   padding:2px 6px;border-radius:3px;letter-spacing:0;white-space:nowrap;
 }
 .app-header__right{display:flex;align-items:center;gap:8px;}
+/* 時計：常時表示するが視覚的優先度は下げる（不透明度を絞り、サイズも縮小） */
 .app-header__clock{
-  font-family:"Montserrat",sans-serif;font-weight:700;font-size:13px;
-  background:#fff;color:var(--ink2);padding:3px 9px;border-radius:20px;
-  border:2px solid #222;
+  font-family:"Montserrat",sans-serif;font-weight:700;font-size:11px;
+  background:#fff;color:var(--ink2);padding:2px 8px;border-radius:18px;
+  border:2px solid #222;opacity:.7;
 }
+/* ナイトモードボタン：常時表示するが、時計と同じく優先度を下げる */
 .icon-btn{
-  width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid var(--ink);
-  display:flex;align-items:center;justify-content:center;font-size:15px;
+  width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.7;
 }
+.icon-btn:active,.icon-btn:focus-visible{opacity:1;}
 .day-tabs{display:flex;gap:6px;padding:2px 12px 9px;}
 .day-tab{
   flex:1;background:#fff;color:var(--ink2);border:2px solid #222;
@@ -242,6 +245,15 @@ main{
 .checklist label:last-child{border-bottom:none;}
 .checklist input{width:20px;height:20px;accent-color:var(--red);flex-shrink:0;}
 .checklist label.done span{text-decoration:line-through;color:var(--sub);}
+/* 折りたたみ版の見出し（タップで展開／閉じる） */
+.checklist--collapsible{padding:4px 14px;}
+.checklist--collapsible summary{
+  list-style:none;cursor:pointer;font-size:13.5px;font-weight:800;
+  padding:10px 2px;display:flex;align-items:center;justify-content:space-between;
+}
+.checklist--collapsible summary::-webkit-details-marker{display:none;}
+.checklist--collapsible summary .tgl{font-size:18px;font-weight:800;color:var(--red);}
+.checklist--collapsible[open] summary{border-bottom:1.5px dashed var(--soft);margin-bottom:4px;}
 
 .faq-item{border-bottom:1.5px dashed var(--soft);padding:4px 0;}
 .faq-item:last-child{border-bottom:none;}
@@ -523,16 +535,16 @@ main{
 .modal__handle{width:40px;height:4px;background:var(--ink);border-radius:3px;
   margin:8px auto 14px;opacity:.3;}
 /* モーダル上部の明示的な「閉じる」ボタン。
-   モーダル本体（.modal）内に sticky で貼り付け、本文をスクロールしても
-   常にモーダル右上に見えるようにする。画面の固定ではなく「モーダル内の固定」。
-   margin-bottom:-40px で後続要素（.modal__handle 等）を上に詰める。 */
+   モーダル本体（.modal）の右上に absolute で固定。`.modal` 自体は
+   relative ではないため、padding-top の上に乗る形で position する。
+   モーダル本文がスクロール可能な場合でも、初期表示時は明確に見える位置。 */
+.modal{position:relative;}
 .modal__close{
-  position:sticky;top:6px;z-index:5;
-  display:block;margin:0 0 -40px auto;
+  position:absolute;top:8px;right:10px;z-index:5;
   width:36px;height:36px;border-radius:50%;
   background:var(--card);color:var(--ink);
   border:2.5px solid var(--ink);font-size:16px;font-weight:900;line-height:1;
-  text-align:center;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
   box-shadow:1px 1px 0 var(--ink);
 }
 .modal__close:active{transform:translate(1px,1px);box-shadow:0 0 0 var(--ink);}
@@ -565,6 +577,13 @@ main{
 .btn--nextyear.on{background:#c98a2b;color:#fff;}
 /* 3ボタン横並びはモバイルだと文字が詰まるため、font-size をやや絞る */
 .modal__btns--triple .btn{padding:11px 6px;font-size:12px;}
+/* 狭い画面（〜425px）では 2行レイアウトに切替：
+   1行目に「行きたい」「行った」、2行目に「来年」を幅いっぱい */
+@media (max-width:425px){
+  .modal__btns--triple{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .modal__btns--triple .btn{font-size:13px;padding:12px 8px;}
+  .modal__btns--triple .btn:nth-child(3){grid-column:1/-1;}
+}
 
 /* タイルの状態バッジ（visited／memo／nextyear）
    ★（.tile__fav、右上 44px）と完全に位置を分け、タイル右下に横並び。
@@ -579,8 +598,17 @@ main{
   display:inline-flex;align-items:center;justify-content:center;
   box-shadow:1px 1px 0 var(--ink);
 }
-/* visited 状態のタイルは背景をうっすら緑にして「行った感」を出す */
+/* バッジを色分けして種類を見分けやすくする（ライト/ダーク両モード対応） */
+.tile__badge--visited{background:#d4edda;}
+.tile__badge--memo{background:#fff3cd;}
+.tile__badge--nextyear{background:#e2d5c0;}
+body.night .tile__badge--visited{background:#1e5631;}
+body.night .tile__badge--memo{background:#4d3e00;}
+body.night .tile__badge--nextyear{background:#5a4a3a;}
+/* visited 状態のタイルは背景をうっすら緑にして「行った感」を出す。
+   ダークモードでは緑が明るすぎないよう、深い緑にトーンを落とす。 */
 .tile--visited{background:linear-gradient(180deg,#f3f8ec 0%,var(--card) 60%);}
+body.night .tile--visited{background:linear-gradient(180deg,#2a3a2a 0%,var(--card) 60%);}
 
 /* モーダル：メモブロック */
 .note-block{
@@ -602,11 +630,13 @@ main{
 }
 
 /* マイプラン：第2層チップ群（行きたい／行った／来年）
-   ダークモード時に未選択チップの背景がネイビー寄り（var(--card)=#22252d）になり
-   視認性が落ちるため、未選択は白＋黒文字、選択は赤＋白文字で固定する。 */
+   未選択チップは ライト=白／ダーク=暗グレーで「下げる」表現に。
+   選択は赤＋白文字で「上げる」表現を両モード共通で維持する。 */
 .chips--sub{margin-bottom:10px;}
 .chips--sub .chip{background:#ffffff;color:#1a1a1a;border-color:#1a1a1a;}
 .chips--sub .chip.active{background:var(--red);color:#ffffff;border-color:#1a1a1a;}
+body.night .chips--sub .chip{background:#2c2f38;color:#f1ede3;border-color:#f1ede3;}
+body.night .chips--sub .chip.active{background:var(--red);color:#ffffff;border-color:#f1ede3;}
 
 /* マイプラン：visited サブタブのタイル本文プレビュー（メモの抜粋） */
 .tile__notepreview{
@@ -618,14 +648,17 @@ main{
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
 
 /* マイプラン：「今年の心残り」サジェストカード
-   背景が淡いベージュ固定なので、文字色もダークモードに引きずられない固定値で持つ。 */
+   ライトモードは淡ベージュ＋黒文字、ダークモードは暗ベージュ＋クリーム文字に
+   切り替えてコントラスト比を確保する。 */
 .regret-card{
-  margin:8px 0 14px;padding:12px;border:2.5px solid #1a1a1a;border-radius:12px;
+  margin:8px 0 14px;padding:12px;border:2.5px solid var(--ink);border-radius:12px;
   background:#fff6e9;box-shadow:var(--hard);color:#1a1a1a;
 }
-.regret-card__head{font-size:13px;font-weight:800;margin-bottom:4px;color:#1a1a1a;}
+.regret-card__head{font-size:13px;font-weight:800;margin-bottom:4px;color:inherit;}
 .regret-card__sub{font-size:11px;color:#5a5a5a;font-weight:600;line-height:1.5;margin-bottom:8px;}
 .regret-card__btn{width:100%;}
+body.night .regret-card{background:#3a2f24;color:#f1ede3;}
+body.night .regret-card__sub{color:#c8b9a3;}
 
 /* マイプラン：設定セクション（エクスポート／インポート） */
 .myplan-settings{
