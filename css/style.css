@@ -198,6 +198,9 @@ main{
 .afterparty-banner__desc{font-size:11px;font-weight:600;opacity:.96;
   margin-top:3px;line-height:1.4;}
 .afterparty-banner__arr{font-size:20px;font-weight:800;flex-shrink:0;}
+/* マイページ更新お知らせ版：アフターパーティバナーの構造を流用しつつ、
+   別アプリ送客ではなくサイト内導線なので、フェスのテーマ赤に切り替える。 */
+.afterparty-banner--myplan{background:var(--red);color:#fff;}
 
 .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
 .quick-btn{

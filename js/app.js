@@ -465,17 +465,17 @@
       '必ず <a href="' + FESTIVAL.official +
       '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
 
-    /* アフターパーティ導線。感想・思い出投稿用の非公式アプリへの送客バナー。
-       クイックメニューより前に出して、開催中〜開催後に見つけやすくする。 */
-    const apb = el('button', 'afterparty-banner',
-      `<div class="afterparty-banner__ico">🪩</div>
+    /* マイページ拡張のお知らせバナー。
+       開催後の振り返り体験として「行った・来年・メモ」が増えた告知。
+       クリックでマイページへ直接遷移。 */
+    const apb = el('button', 'afterparty-banner afterparty-banner--myplan',
+      `<div class="afterparty-banner__ico">📒</div>
        <div class="afterparty-banner__body">
-         <div class="afterparty-banner__title">森道 After party</div>
-         <div class="afterparty-banner__desc">感想・思い出を投稿できる非公式アプリ</div>
+         <div class="afterparty-banner__title">マイページが新しくなりました</div>
+         <div class="afterparty-banner__desc">行った・来年も行きたい・メモが残せるように</div>
        </div>
        <div class="afterparty-banner__arr">›</div>`);
-    apb.onclick = () =>
-      openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/');
+    apb.onclick = () => switchView('myplan');
     root.appendChild(apb);
 
     /* クイック */
@@ -487,8 +487,7 @@
      ['🛍️', '出店', () => switchView('shops')],
      ['⭐', 'マイプラン', () => switchView('myplan')],
      ['🚌', 'アクセス', () => jump('accessCard')],
-     ['☔', '天気', () => openUrl(FESTIVAL.weather)],
-     ['🪩', 'アフターパーティ', () => openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/')]
+     ['☔', '天気', () => openUrl(FESTIVAL.weather)]
     ].forEach(q => {
       const b = el('button', 'quick-btn',
         `<div class="ico">${q[0]}</div><div class="lbl">${q[1]}</div>`);
