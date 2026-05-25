@@ -1762,34 +1762,23 @@
     ctx.beginPath(); ctx.moveTo(80, 1800); ctx.lineTo(W - 80, 1800); ctx.stroke();
     ctx.setLineDash([]);
 
-    /* 3. 上部の半券メタ（媒体名は入れない） */
-    ctx.textAlign = 'left';
-    ctx.fillStyle = COLOR.sub;
-    ctx.font = '500 22px ' + FONT.mono;
-    ctx.fillText('TICKET STUB', 80, 170);
-    ctx.textAlign = 'right';
-    const today = new Date();
-    const serial = 'No. ' +
-      String(today.getDate()).padStart(2,'0') +
-      String(today.getMonth()+1).padStart(2,'0') + ' / 2026';
-    ctx.fillText(serial, W - 80, 170);
-
-    /* 4. メインタイトル */
+    /* 3. メインタイトル（意味の伝わらないTICKET STUB / No.は撤去し、
+       上部の余白を広く取って整った印象にする） */
     ctx.textAlign = 'center';
     ctx.fillStyle = COLOR.ink;
     ctx.font = '900 56px ' + FONT.en;
-    ctx.fillText('MORIMICHI ICHIBA', W/2, 350);
+    ctx.fillText('MORIMICHI ICHIBA', W/2, 320);
     ctx.font = '500 36px ' + FONT.jp;
-    ctx.fillText('森、道、市場', W/2, 406);
+    ctx.fillText('森、道、市場', W/2, 376);
     ctx.font = '900 84px ' + FONT.en;
-    ctx.fillText('2026.05.22 - 24', W/2, 520);
+    ctx.fillText('2026.05.22 - 24', W/2, 500);
     ctx.fillStyle = COLOR.sub;
     ctx.font = '300 28px ' + FONT.jp;
-    ctx.fillText('ラグーナビーチ ／ 蒲郡', W/2, 570);
+    ctx.fillText('ラグーナビーチ ／ 蒲郡', W/2, 550);
 
-    /* 5. キャッチコピー */
+    /* 4. キャッチコピー（強調のため大きく） */
     ctx.fillStyle = COLOR.ink;
-    ctx.font = '500 44px ' + FONT.jp;
+    ctx.font = '500 56px ' + FONT.jp;
     ctx.fillText('わたしの森道。', W/2, 680);
 
     /* 6. 2項目の数値ブロック（巡った／来年こそは）。中央分割の細罫 */
@@ -1868,11 +1857,11 @@
     drawShopList(COL_L, visitedShops,  COLOR.crimson);
     drawShopList(COL_R, nextYearShops, COLOR.indigo);
 
-    /* 8. フッター（媒体名は入れず、フェス側の表記のみ） */
+    /* 8. フッター（最小限の表記） */
     ctx.textAlign = 'center';
     ctx.fillStyle = COLOR.sub;
     ctx.font = '500 20px ' + FONT.jp;
-    ctx.fillText('森道市場 2026  非公式ガイド', W/2, 1860);
+    ctx.fillText('森、道、市場 2026', W/2, 1860);
 
     return canvas;
   }

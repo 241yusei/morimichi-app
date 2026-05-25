@@ -205,7 +205,7 @@ main{
    別アプリ送客ではなくサイト内導線なので、フェスのテーマ赤に切り替える。 */
 .afterparty-banner--myplan{background:var(--red);color:#fff;}
 
-.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:18px;}
 .quick-btn{
   background:var(--card);border:2.5px solid var(--ink);border-radius:11px;
   box-shadow:var(--hard);padding:11px 3px;text-align:center;transition:.1s;
