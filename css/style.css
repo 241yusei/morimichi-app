@@ -487,8 +487,12 @@ main{
   width:44px;height:44px;display:flex;align-items:center;justify-content:center;
   z-index:2;}
 /* 出店タイルはカテゴリ絵文字を撤去し、店名を上端から詰める。
-   .tile__fav（★）は右上 44px ぶんを占めるため、店名と被らないように右パディングを足す。 */
+   - 店名は右上の ★（44px）と被らないよう右マージン 44px
+   - エリア名は右下のバッジ列とぶつからないよう、バッジ数に応じて段階的に右パディング */
 .tile--shop .tile__name{margin:0 44px 3px 0;font-size:13.5px;line-height:1.3;}
+.tile--shop.tile--badges-1 .tile__meta{padding-right:32px;min-height:22px;}
+.tile--shop.tile--badges-2 .tile__meta{padding-right:54px;min-height:22px;}
+.tile--shop.tile--badges-3 .tile__meta{padding-right:78px;min-height:22px;}
 .empty{text-align:center;color:var(--sub);font-size:13px;padding:44px 20px;}
 .empty .big{font-size:40px;margin-bottom:8px;}
 
@@ -545,14 +549,16 @@ main{
 /* 3ボタン横並びはモバイルだと文字が詰まるため、font-size をやや絞る */
 .modal__btns--triple .btn{padding:11px 6px;font-size:12px;}
 
-/* タイル右下のバッジ（visited／memo／nextyear を縦に並べる） */
+/* タイルの状態バッジ（visited／memo／nextyear）
+   ★（.tile__fav、右上 44px）と完全に位置を分け、タイル右下に横並び。
+   バッジが1〜3個でもタイル高さに依存せず収まる。 */
 .tile__badges{
-  position:absolute;bottom:4px;right:4px;display:flex;flex-direction:column;
-  gap:2px;align-items:flex-end;pointer-events:none;
+  position:absolute;bottom:6px;right:6px;display:flex;flex-direction:row;
+  gap:3px;align-items:center;pointer-events:none;z-index:1;
 }
 .tile__badge{
-  font-size:13px;line-height:1;background:var(--card);
-  border:2px solid var(--ink);border-radius:50%;width:22px;height:22px;
+  font-size:12px;line-height:1;background:var(--card);
+  border:2px solid var(--ink);border-radius:50%;width:20px;height:20px;
   display:inline-flex;align-items:center;justify-content:center;
   box-shadow:1px 1px 0 var(--ink);
 }

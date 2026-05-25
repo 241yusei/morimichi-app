@@ -1356,14 +1356,18 @@
     const ny = isNextYear(s.id);
     /* バッジ重ね順：✅ visited → 📝 memo → 🌱 nextyear。tile__fav は右上に固定。
        バッジが多すぎるとタイルがうるさくなるため、状態がある時だけ表示する。 */
-    const badges = [
+    const badgeArr = [
       v ? '<span class="tile__badge tile__badge--visited" title="行った">✅</span>' : '',
       m ? '<span class="tile__badge tile__badge--memo" title="メモあり">📝</span>' : '',
       ny ? '<span class="tile__badge tile__badge--nextyear" title="来年も行きたい">🌱</span>' : ''
-    ].filter(Boolean).join('');
+    ].filter(Boolean);
+    const badges = badgeArr.join('');
+    /* バッジ数に応じて .tile--has-badgesN クラスを付け、エリア名の右パディング量を出し分ける。
+       これで「バッジ無しタイル」に無駄な余白が出ない。 */
+    const badgeCls = badgeArr.length ? ' tile--has-badges tile--badges-' + badgeArr.length : '';
     /* カテゴリの絵文字（🛍️ / 🍜 など）は撤去し、店名を左上に詰める。
        カテゴリ識別はモーダル側で表示するため、リストでは情報密度を優先する。 */
-    const t = el('div', 'tile tile--shop' + (v ? ' tile--visited' : ''),
+    const t = el('div', 'tile tile--shop' + (v ? ' tile--visited' : '') + badgeCls,
       `<div class="tile__name">${esc(s.name)}</div>
        <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
        ${badges ? `<div class="tile__badges">${badges}</div>` : ''}
@@ -1555,17 +1559,17 @@
       }
       const g = el('div', 'list-grid');
       list.forEach(s => {
-        const t = el('div', 'tile tile--shop' + (isVisited(s.id) ? ' tile--visited' : ''),
+        const badgeArr = [
+          isVisited(s.id) ? '<span class="tile__badge tile__badge--visited">✅</span>' : '',
+          hasNote(s.id) ? '<span class="tile__badge tile__badge--memo">📝</span>' : '',
+          isNextYear(s.id) ? '<span class="tile__badge tile__badge--nextyear">🌱</span>' : ''
+        ].filter(Boolean);
+        const badges = badgeArr.join('');
+        const badgeCls = badgeArr.length ? ' tile--has-badges tile--badges-' + badgeArr.length : '';
+        const t = el('div', 'tile tile--shop' + (isVisited(s.id) ? ' tile--visited' : '') + badgeCls,
           `<div class="tile__name">${esc(s.name)}</div>
            <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
-           ${(() => {
-             const badges = [
-               isVisited(s.id) ? '<span class="tile__badge tile__badge--visited">✅</span>' : '',
-               hasNote(s.id) ? '<span class="tile__badge tile__badge--memo">📝</span>' : '',
-               isNextYear(s.id) ? '<span class="tile__badge tile__badge--nextyear">🌱</span>' : ''
-             ].filter(Boolean).join('');
-             return badges ? `<div class="tile__badges">${badges}</div>` : '';
-           })()}
+           ${badges ? `<div class="tile__badges">${badges}</div>` : ''}
            <button class="tile__fav">${isFav('shops', s.id) ? '★' : '☆'}</button>`);
         t.onclick = () => openShop(s.id);
         t.querySelector('.tile__fav').onclick = e => {
