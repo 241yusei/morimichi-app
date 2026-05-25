@@ -487,7 +487,8 @@
      ['🛍️', '出店', () => switchView('shops')],
      ['⭐', 'マイプラン', () => switchView('myplan')],
      ['🚌', 'アクセス', () => jump('accessCard')],
-     ['☔', '天気', () => openUrl(FESTIVAL.weather)]
+     ['☔', '天気', () => openUrl(FESTIVAL.weather)],
+     ['🪩', 'アフターパーティ', () => openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/')]
     ].forEach(q => {
       const b = el('button', 'quick-btn',
         `<div class="ico">${q[0]}</div><div class="lbl">${q[1]}</div>`);
