@@ -17,7 +17,7 @@
        同一ブース番号で日替わりに店舗が入れ替わる出店（種と旅と・モリミチ喫茶室・
        ウキウキ通り 18-20 など）を正しく絞り込むために必須。 */
     shopDay: 'all',
-    myplanTab: 'artists',
+    myplanTab: 'shops',
     /* マイプラン「行きたい出店」内の第2層タブ。
        wishlist=既存fav(行きたい) / visited=行った / nextyear=来年行きたい */
     myplanShopSubTab: 'wishlist',
@@ -1361,9 +1361,10 @@
       m ? '<span class="tile__badge tile__badge--memo" title="メモあり">📝</span>' : '',
       ny ? '<span class="tile__badge tile__badge--nextyear" title="来年も行きたい">🌱</span>' : ''
     ].filter(Boolean).join('');
-    const t = el('div', 'tile' + (v ? ' tile--visited' : ''),
-      `<div class="tile__cat">${s.catIcon}</div>
-       <div class="tile__name">${esc(s.name)}</div>
+    /* カテゴリの絵文字（🛍️ / 🍜 など）は撤去し、店名を左上に詰める。
+       カテゴリ識別はモーダル側で表示するため、リストでは情報密度を優先する。 */
+    const t = el('div', 'tile tile--shop' + (v ? ' tile--visited' : ''),
+      `<div class="tile__name">${esc(s.name)}</div>
        <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
        ${badges ? `<div class="tile__badges">${badges}</div>` : ''}
        <button class="tile__fav" aria-label="お気に入り">${
@@ -1438,8 +1439,9 @@
     const root = $('#view-myplan');
     root.innerHTML = '';
     const tabs = el('div', 'seg-tabs');
-    [['artists', '⭐ 観たい出演者', state.fav.artists.length],
-     ['shops', '🛍️ 行きたい出店', state.fav.shops.length]
+    /* 出店中心の振り返り体験を優先し、行きたい出店を左・観たい出演者を右に。 */
+    [['shops', '🛍️ 行きたい出店', state.fav.shops.length],
+     ['artists', '⭐ 観たい出演者', state.fav.artists.length]
     ].forEach(t => {
       const b = el('button', t[0] === state.myplanTab ? 'active' : '',
         t[1] + ' (' + t[2] + ')');
@@ -1553,9 +1555,8 @@
       }
       const g = el('div', 'list-grid');
       list.forEach(s => {
-        const t = el('div', 'tile' + (isVisited(s.id) ? ' tile--visited' : ''),
-          `<div class="tile__cat">${s.catIcon}</div>
-           <div class="tile__name">${esc(s.name)}</div>
+        const t = el('div', 'tile tile--shop' + (isVisited(s.id) ? ' tile--visited' : ''),
+          `<div class="tile__name">${esc(s.name)}</div>
            <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
            ${(() => {
              const badges = [
