@@ -660,6 +660,52 @@ body.night .chips--sub .chip.active{background:var(--red);color:#ffffff;border-c
 body.night .regret-card{background:#3a2f24;color:#f1ede3;}
 body.night .regret-card__sub{color:#c8b9a3;}
 
+/* ホーム：マイページ機能の紹介セクション
+   クイックメニュー直後に配置し、初見ユーザーにも「マイページで何ができるか」を伝える。
+   2x2グリッド × 朱赤／群青の交互カラーで、シェア画像と同じトーンを統一。 */
+.myplan-intro{
+  margin:18px 0 22px;padding:16px 14px 14px;
+  border:2.5px solid var(--ink);border-radius:14px;background:var(--card);
+  box-shadow:var(--hard);
+}
+.myplan-intro__kicker{
+  font-size:11px;font-weight:800;letter-spacing:.18em;color:#B5341F;
+  margin-bottom:4px;
+}
+.myplan-intro__head{
+  font-size:16px;font-weight:800;line-height:1.4;color:var(--ink);
+  margin-bottom:14px;
+}
+.myplan-intro__grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;
+}
+.myplan-intro__cell{
+  border:2px solid var(--ink);border-radius:10px;padding:11px 10px;
+  background:#fff;position:relative;color:#1a1a1a;
+}
+.myplan-intro__cell--indigo .myplan-intro__num{color:#2E4A6B;}
+.myplan-intro__num{
+  font-family:"SF Mono","Menlo",monospace;font-size:11px;font-weight:700;
+  color:#B5341F;letter-spacing:.05em;margin-bottom:4px;
+}
+.myplan-intro__lbl{
+  font-size:13px;font-weight:800;line-height:1.35;margin-bottom:4px;
+  color:#1a1a1a;
+}
+.myplan-intro__desc{
+  font-size:10.5px;font-weight:600;line-height:1.5;color:#5a5a5a;
+}
+.myplan-intro__btn{
+  width:100%;border:2.5px solid var(--ink);border-radius:10px;
+  padding:13px;font-size:13.5px;font-weight:800;background:var(--ink);color:#fff;
+  box-shadow:var(--hard);transition:.1s;
+}
+.myplan-intro__btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+/* ダークモード対応：白背景セルは少し暗めに */
+body.night .myplan-intro__cell{background:#2c2f38;color:#f1ede3;}
+body.night .myplan-intro__lbl{color:#f1ede3;}
+body.night .myplan-intro__desc{color:#c8b9a3;}
+
 /* 画像プレビュー（マイプランカード書き出し用モーダル） */
 .image-preview__title{
   font-size:13px;font-weight:800;letter-spacing:.04em;color:var(--sub);

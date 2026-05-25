@@ -530,6 +530,41 @@
     });
     root.appendChild(qg);
 
+    /* マイページ機能の紹介セクション。
+       会期後の振り返り体験（めぐった／来年こそは／メモ／画像シェア）を
+       初見ユーザーにも分かるように説明。マイプランボタンの真上に置くことで、
+       「クイックメニューのマイプランで何ができるか」を即座に伝える。 */
+    const intro = el('div', 'myplan-intro');
+    intro.innerHTML =
+      '<div class="myplan-intro__kicker">MY PAGE</div>' +
+      '<div class="myplan-intro__head">マイページで、今年の森道を残す</div>' +
+      '<div class="myplan-intro__grid">' +
+        '<div class="myplan-intro__cell">' +
+          '<div class="myplan-intro__num">01</div>' +
+          '<div class="myplan-intro__lbl">めぐった出店を記録</div>' +
+          '<div class="myplan-intro__desc">出店モーダルの「行った」をタップ。タイルに印が付きます。</div>' +
+        '</div>' +
+        '<div class="myplan-intro__cell myplan-intro__cell--indigo">' +
+          '<div class="myplan-intro__num">02</div>' +
+          '<div class="myplan-intro__lbl">来年こそはリスト</div>' +
+          '<div class="myplan-intro__desc">気になっていたけれど行けなかった店を、来年に持ち越し。</div>' +
+        '</div>' +
+        '<div class="myplan-intro__cell">' +
+          '<div class="myplan-intro__num">03</div>' +
+          '<div class="myplan-intro__lbl">店ごとのメモ</div>' +
+          '<div class="myplan-intro__desc">おすすめ・また来たいなどタグ＋自由メモ。500字まで。</div>' +
+        '</div>' +
+        '<div class="myplan-intro__cell myplan-intro__cell--indigo">' +
+          '<div class="myplan-intro__num">04</div>' +
+          '<div class="myplan-intro__lbl">画像でシェア</div>' +
+          '<div class="myplan-intro__desc">「2026年の、わたしの森道」を1枚の画像に。SNSへ。</div>' +
+        '</div>' +
+      '</div>';
+    const introBtn = el('button', 'myplan-intro__btn', 'マイページを開く');
+    introBtn.onclick = () => switchView('myplan');
+    intro.appendChild(introBtn);
+    root.appendChild(intro);
+
     /* アクセス */
     root.appendChild(secTitle('会場アクセス', 'ACCESS'));
     const ac = el('div', 'card'); ac.id = 'accessCard';
@@ -1689,7 +1724,7 @@
   function shareMyplanText() {
     const v = state.visited.length;
     const n = state.nextYear.length;
-    const lines = ['今年の森道、巡ったのは ' + v + ' 店。'];
+    const lines = ['今年の森道、めぐったのは ' + v + ' 店。'];
     if (n > 0) lines.push('来年こそは ' + n + ' 店。');
     lines.push('');
     lines.push('#森道市場2026 #森道市場');
@@ -1783,14 +1818,14 @@
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(W/2, BLOCK_TOP); ctx.lineTo(W/2, 1740); ctx.stroke();
 
-    /* 左セル：巡った（朱赤の番号） */
+    /* 左セル：めぐった（朱赤の番号） */
     ctx.textAlign = 'center';
     ctx.fillStyle = COLOR.crimson;
     ctx.font = '500 26px ' + FONT.mono;
     ctx.fillText('01', COL_L, BLOCK_TOP + 40);
     ctx.fillStyle = COLOR.ink;
     ctx.font = '900 44px ' + FONT.jp;
-    ctx.fillText('巡った', COL_L, BLOCK_TOP + 100);
+    ctx.fillText('めぐった', COL_L, BLOCK_TOP + 100);
     ctx.font = '900 168px ' + FONT.en;
     ctx.fillText(String(visited), COL_L, BLOCK_TOP + 250);
     ctx.fillStyle = COLOR.sub;
@@ -1886,7 +1921,7 @@
           navigator.share({
             files: [file],
             title: '2026 年の、わたしの森道。',
-            text: '今年の森道、巡ったのは ' + visited + ' 店。来年こそは ' + nextYr + ' 店。\n#森道市場2026 #森道市場'
+            text: '今年の森道、めぐったのは ' + visited + ' 店。来年こそは ' + nextYr + ' 店。\n#森道市場2026 #森道市場'
           }).catch(() => {});
           return;
         }
