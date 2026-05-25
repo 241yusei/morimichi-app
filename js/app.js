@@ -503,7 +503,7 @@
         '<div class="myplan-intro__cell">' +
           '<div class="myplan-intro__num">01</div>' +
           '<div class="myplan-intro__lbl">めぐった出店を記録</div>' +
-          '<div class="myplan-intro__desc">出店モーダルの「行った」をタップ。タイルに印が付きます。</div>' +
+          '<div class="myplan-intro__desc">出店をタップして「行った」を選ぶと、タイルに印が付きます。</div>' +
         '</div>' +
         '<div class="myplan-intro__cell myplan-intro__cell--indigo">' +
           '<div class="myplan-intro__num">02</div>' +
@@ -1582,17 +1582,13 @@
         emptyMsg = '<div class="big">🌱</div>「来年も行きたい」と思った出店を<br>モーダルからチェックして残しておきましょう';
       }
 
-      /* wishlist サブタブのみ「マップで動線確認」ボタンを出す（既存挙動の維持） */
+      /* wishlist サブタブの最上段：マイプランをシェアボタン。
+         （旧「行きたい出店をマップで動線確認」を撤去してここに置き換え） */
       if (sub === 'wishlist' && list.length) {
-        const planBtn = el('button', 'plan-map-btn',
-          '🗺️ 行きたい出店をマップで動線確認');
-        planBtn.onclick = () => {
-          state.planMode = true;
-          state.highlightShop = null;
-          state.selectedZone = null;
-          switchView('map');
-        };
-        root.appendChild(planBtn);
+        const shareBtn = el('button', 'plan-map-btn',
+          'マイプランをシェア');
+        shareBtn.onclick = () => showMyplanImagePreview();
+        root.appendChild(shareBtn);
       }
 
       /* nextyear サブタブの最上段：「今年の心残り」サジェスト
@@ -1784,17 +1780,17 @@
     ctx.font = '900 56px ' + FONT.en;
     ctx.fillText('MORIMICHI ICHIBA', W/2, 350);
     ctx.font = '500 36px ' + FONT.jp;
-    ctx.fillText('森道市場', W/2, 406);
+    ctx.fillText('森、道、市場', W/2, 406);
     ctx.font = '900 84px ' + FONT.en;
-    ctx.fillText('2026.05.22 — 24', W/2, 520);
+    ctx.fillText('2026.05.22 - 24', W/2, 520);
     ctx.fillStyle = COLOR.sub;
     ctx.font = '300 28px ' + FONT.jp;
     ctx.fillText('ラグーナビーチ ／ 蒲郡', W/2, 570);
 
     /* 5. キャッチコピー */
     ctx.fillStyle = COLOR.ink;
-    ctx.font = '500 40px ' + FONT.jp;
-    ctx.fillText('2026 年の、わたしの森道。', W/2, 680);
+    ctx.font = '500 44px ' + FONT.jp;
+    ctx.fillText('わたしの森道。', W/2, 680);
 
     /* 6. 2項目の数値ブロック（巡った／来年こそは）。中央分割の細罫 */
     const BLOCK_TOP = 760;
@@ -2071,60 +2067,50 @@
   }
 
   /* ============================================================
-     初回お礼ポップアップ（森道2026 終了後の感謝とアフターパーティー誘導）
-  ============================================================ */
+     初回ポップアップ：新しくなったマイページの紹介
+     初めて開く人（および以前にお礼ポップアップで保存されたフラグを持つ人）
+     にも、新機能の説明として1回だけ表示する。新キーを使うため、
+     既存ユーザーへの「既読」状態は引き継がない。 */
   function showThanksPopupIfFirst() {
     let seen = '';
-    try { seen = localStorage.getItem('mm2026_thanks_seen') || ''; } catch (e) {}
+    try { seen = localStorage.getItem('mm2026_intro_seen_v1') || ''; } catch (e) {}
     if (seen === '1') return;
-
-    const formUrl =
-      'https://docs.google.com/forms/d/e/1FAIpQLSfGdWdr7QFt6fmrM8B0D6227ISCFi5RoGPjkXplnyc9Bcb-0Q/viewform';
-    const apartyUrl = 'https://nagoya-ningen.github.io/morimichi-afterparty/';
 
     const html =
       '<div class="thanks-popup">' +
-        '<h2 class="thanks-popup__title">森、道、市場2026、いよいよ最終日。</h2>' +
+        '<h2 class="thanks-popup__title">マイページが新しくなりました</h2>' +
         '<div class="thanks-popup__body">' +
-          '<p>森道ガイドアプリ、使ってくれてありがとうございました。' +
-          'もともとは自分一人のために作ったものだったので、' +
-          '実際に誰かの役に立てていたら、それだけでうれしいです！</p>' +
-          '<p>ひとつだけ、お願いがあります。よかったら、' +
-          'アプリの感想を聞かせて欲しいです。' +
-          '良かったところも、使いにくかったところも、どちらも知りたいです。</p>' +
-          '<p>1、2分ほどで終わる感想フォームを置いています。' +
-          'お名前はニックネームでも、適当でも大丈夫です。</p>' +
-          '<p>それから、3日間が終わったあとの場所として' +
-          '「森道アフターパーティー」という別のアプリも開いています。' +
-          '森道で「最高だった！」と感じた瞬間を、' +
-          '書き残して共有ができる記録用のアプリです。' +
-          'よければ、そちらも覗いてみてください。</p>' +
-          '<p>よろしくお願いします。</p>' +
+          '<p>森道2026を「あとから振り返って残す」ための4つの機能を、マイページに追加しました。</p>' +
+          '<ul class="thanks-popup__list">' +
+            '<li><b>めぐった出店を記録</b>　出店をタップして「行った」を選ぶと、タイルに印が付きます。</li>' +
+            '<li><b>来年こそはリスト</b>　気になっていたのに行けなかった店を、来年に持ち越し。</li>' +
+            '<li><b>店ごとのメモ</b>　おすすめ・また来たい・写真映え… タグ＋自由メモを500字まで。</li>' +
+            '<li><b>マイプランをシェア</b>　「わたしの森道」を1枚の画像にして、SNSに残せます。</li>' +
+          '</ul>' +
+          '<p>会期中の慌ただしさが落ち着いたら、ぜひ振り返ってみてください。</p>' +
         '</div>' +
         '<div class="thanks-popup__actions">' +
-          '<a class="thanks-popup__btn thanks-popup__btn--primary" ' +
-            'id="thanksFormBtn" href="' + formUrl + '" ' +
-            'target="_blank" rel="noopener">感想フォームを開く</a>' +
-          '<a class="thanks-popup__btn thanks-popup__btn--ghost" ' +
-            'id="thanksApartyBtn" href="' + apartyUrl + '" ' +
-            'target="_blank" rel="noopener">森道アフターパーティーを開く</a>' +
+          '<button class="thanks-popup__btn thanks-popup__btn--primary" ' +
+            'id="introOpenBtn" type="button">マイページを開く</button>' +
           '<button class="thanks-popup__btn thanks-popup__btn--close" ' +
-            'id="thanksCloseBtn" type="button">閉じる</button>' +
+            'id="thanksCloseBtn" type="button">あとで</button>' +
         '</div>' +
       '</div>';
 
     openModal(html);
 
-    /* どのルートで閉じても／どのリンクを踏んでも「見た」フラグを保存して
-       再表示を抑止する。背景クリック・Escape・popstate も MutationObserver で拾う。 */
+    /* 「見た」フラグの保存。マイページを開いた／閉じたのいずれでも保存し、
+       再表示を抑止する。 */
     function markSeen() {
-      try { localStorage.setItem('mm2026_thanks_seen', '1'); } catch (e) {}
+      try { localStorage.setItem('mm2026_intro_seen_v1', '1'); } catch (e) {}
     }
-    const formBtn = document.getElementById('thanksFormBtn');
-    const apartyBtn = document.getElementById('thanksApartyBtn');
+    const openBtn = document.getElementById('introOpenBtn');
     const closeBtn = document.getElementById('thanksCloseBtn');
-    if (formBtn) formBtn.addEventListener('click', markSeen);
-    if (apartyBtn) apartyBtn.addEventListener('click', markSeen);
+    if (openBtn) openBtn.addEventListener('click', () => {
+      markSeen();
+      closeModal();
+      setTimeout(() => switchView('myplan'), 50);
+    });
     if (closeBtn) closeBtn.addEventListener('click', () => {
       markSeen();
       closeModal();

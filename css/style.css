@@ -826,6 +826,15 @@ body.night .myplan-intro__desc{color:#c8b9a3;}
 }
 .thanks-popup__body p{margin:0 0 12px;}
 .thanks-popup__body p:last-child{margin-bottom:0;}
+.thanks-popup__list{
+  list-style:none;padding:0;margin:0 0 14px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.thanks-popup__list li{
+  font-size:13px;line-height:1.55;padding:9px 11px;
+  border:2px solid var(--ink);border-radius:9px;background:var(--card);
+}
+.thanks-popup__list li b{font-weight:800;}
 .thanks-popup__actions{
   display:flex;flex-direction:column;gap:10px;
 }
