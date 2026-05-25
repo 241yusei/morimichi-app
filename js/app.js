@@ -1688,7 +1688,13 @@
   let modalOpen = false, modalLastFocus = null;
   function openModal(html) {
     const body = $('#modalBody'), bg = $('#modalBg');
-    body.innerHTML = html;
+    /* 全モーダル共通で、右上に明示的な「✕」閉じるボタンを差し込む。
+       モーダル外タップ／Escape／スワイプバックでも閉じられるが、上部に
+       タップ可能な明示ボタンを置くことで「戻りにくさ」を解消する。 */
+    body.innerHTML =
+      '<button class="modal__close" id="modalCloseBtn" type="button" aria-label="閉じる">✕</button>' + html;
+    const closeBtn = body.querySelector('#modalCloseBtn');
+    if (closeBtn) closeBtn.onclick = () => closeModal();
     modalLastFocus = document.activeElement;
     bg.classList.add('open');
     /* Android のハードウェア戻る / iOS スワイプバックで閉じられるよう履歴に積む */
@@ -1696,8 +1702,10 @@
       modalOpen = true;
       try { history.pushState({ modal: 1 }, ''); } catch (e) {}
     }
-    /* フォーカスをモーダル内へ移す（キーボード／スクリーンリーダー対応） */
-    const first = body.querySelector('button, a, input');
+    /* フォーカスをモーダル内へ移す（キーボード／スクリーンリーダー対応）。
+       閉じるボタンには初期フォーカスを当てない（誤タップ防止のため
+       一番上のコンテンツ要素を優先）。 */
+    const first = body.querySelector('button:not(#modalCloseBtn), a, input');
     if (first) setTimeout(() => { try { first.focus(); } catch (e) {} }, 30);
   }
   /* fromPop=true は popstate 由来（履歴は既に戻っている）。
