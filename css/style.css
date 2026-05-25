@@ -520,15 +520,17 @@ main{
 .modal__handle{width:40px;height:4px;background:var(--ink);border-radius:3px;
   margin:8px auto 14px;opacity:.3;}
 /* モーダル上部の明示的な「閉じる」ボタン。
-   position:fixed で画面右上に固定し、モーダル本文をスクロールしても
-   常に見える状態にする。z-index は .modal-bg(100) より上。 */
+   モーダル本体（.modal）内に sticky で貼り付け、本文をスクロールしても
+   常にモーダル右上に見えるようにする。画面の固定ではなく「モーダル内の固定」。
+   margin-bottom:-40px で後続要素（.modal__handle 等）を上に詰める。 */
 .modal__close{
-  position:fixed;top:calc(env(safe-area-inset-top, 0px) + 10px);right:14px;z-index:200;
-  width:40px;height:40px;border-radius:50%;
+  position:sticky;top:6px;z-index:5;
+  display:block;margin:0 0 -40px auto;
+  width:36px;height:36px;border-radius:50%;
   background:var(--card);color:var(--ink);
-  border:2.5px solid var(--ink);font-size:18px;font-weight:900;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:1px 1px 0 var(--ink);cursor:pointer;
+  border:2.5px solid var(--ink);font-size:16px;font-weight:900;line-height:1;
+  text-align:center;cursor:pointer;
+  box-shadow:1px 1px 0 var(--ink);
 }
 .modal__close:active{transform:translate(1px,1px);box-shadow:0 0 0 var(--ink);}
 .modal__cat{font-size:30px;}
