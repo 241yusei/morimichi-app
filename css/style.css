@@ -591,8 +591,10 @@ main{
 .note-block__tags{margin:0 -2px 6px;}
 .note-block__body{
   width:100%;min-height:84px;padding:8px;border-radius:8px;
-  border:2px solid var(--ink);background:#fff;font-size:13px;line-height:1.55;
+  border:2px solid var(--ink);background:#fff;font-size:16px;line-height:1.55;
   resize:vertical;font-family:inherit;
+  /* iOS Safari は font-size 16px 未満の input/textarea をフォーカスすると
+     ページを自動ズームしてしまう。これを防ぐため 16px 以上を維持する。 */
 }
 .note-block__body:focus{outline:2px solid var(--red);outline-offset:1px;}
 .note-block__count{
