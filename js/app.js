@@ -1582,8 +1582,8 @@
         if (regrets.length) {
           const rec = el('div', 'regret-card');
           rec.innerHTML =
-            '<div class="regret-card__head">💭 今年の心残り：' + regrets.length + ' 店</div>' +
-            '<div class="regret-card__sub">行きたかったけれど「行った」にチェックされていない出店です。ワンタップで来年リストに追加できます。</div>';
+            '<div class="regret-card__head">次は、ここから — ' + regrets.length + ' 店</div>' +
+            '<div class="regret-card__sub">気になっていたけれど「行った」にチェックされていない出店です。ワンタップで来年リストに追加できます。</div>';
           const addAll = el('button', 'btn btn--primary regret-card__btn',
             '🌱 ' + regrets.length + ' 店をまとめて来年リストへ');
           addAll.onclick = () => {
@@ -1685,109 +1685,216 @@
     root.appendChild(wrap);
   }
 
-  /* テキストシェア：マイプランの総数を読みやすい1行にまとめてシェア */
+  /* テキストシェア：マイプランの総数を読みやすい一文にまとめてシェア（絵文字なし） */
   function shareMyplanText() {
-    const w = state.fav.shops.length;
     const v = state.visited.length;
     const n = state.nextYear.length;
-    const lines = [
-      '私の森道市場2026マイプラン',
-      '⭐ 行きたい ' + w + ' 店 / ✅ 行った ' + v + ' 店 / 🌱 来年 ' + n + ' 店'
-    ];
+    const w = state.fav.shops.length;
+    const lines = ['今年の森道、巡ったのは ' + v + ' 店。'];
+    if (n > 0) lines.push('来年に持ち越したのが ' + n + ' 店。');
+    if (w > 0) lines.push('気になっていたのは ' + w + ' 店。');
+    lines.push('');
+    lines.push('#森道市場2026 #森道市場');
     shareOrCopy({
-      title: '私の森道市場2026',
+      title: '2026 年の、わたしの森道。',
       text: lines.join('\n'),
       url: APP_URL
     });
   }
 
-  /* マイプランカード画像を 1080x1920（9:16）で生成し、ダウンロード or 共有 */
+  /* マイプランカード画像を 1080x1920（9:16）で生成。
+     コンセプト：チケットスタブ型。紙の質感＋ミシン目＋朱印で、
+     ナゴヤ人間の編集トーンと整合する「保存したくなる1枚」を目指す。
+     絵文字は一切使わず、タイポ・罫線・幾何で温度を出す。 */
   function exportMyplanImage() {
     const W = 1080, H = 1920;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
-    /* 背景：アプリのテーマに合わせて、上 赤 / 下 ペーパー */
-    ctx.fillStyle = '#FAFAF7';
+    /* カラーパレット */
+    const COLOR = {
+      paper:   '#F2EBDC',  /* 生成り紙 */
+      ink:     '#1A1410',  /* 墨 */
+      crimson: '#B5341F',  /* 朱（印影） */
+      sub:     '#6E5F4E',  /* 茶系・補助テキスト */
+      muted:   'rgba(26,20,16,0.15)' /* メモ罫線 */
+    };
+    /* フォント（system フォント前提） */
+    const FONT = {
+      jp:  '-apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif',
+      en:  '"SF Pro Display", "Helvetica Neue", system-ui, sans-serif',
+      mono:'"SF Mono", "Menlo", monospace'
+    };
+
+    /* 数値 */
+    const visited  = state.visited.length;
+    const nextYr   = state.nextYear.length;
+    const wishlist = state.fav.shops.length;
+
+    /* 1. 紙の地 */
+    ctx.fillStyle = COLOR.paper;
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#de1815';
-    ctx.fillRect(0, 0, W, 420);
-    /* ヘッダーテキスト */
-    ctx.fillStyle = '#fff';
-    ctx.font = '700 64px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.fillText('森、道、市場 2026', 60, 100);
-    ctx.font = '500 38px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-    ctx.fillText('私のマイプラン', 60, 195);
-    ctx.font = '500 30px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
-    ctx.fillText('5.22 FRI – 5.24 SUN / 蒲郡 ラグーナビーチ', 60, 270);
+    ctx.textBaseline = 'alphabetic';
 
-    /* 統計の3カード */
-    const stats = [
-      ['⭐', '行きたい', state.fav.shops.length, '#fff', '#de1815'],
-      ['✅', '行った',   state.visited.length, '#fff', '#5b8a3a'],
-      ['🌱', '来年',     state.nextYear.length, '#fff', '#c98a2b']
-    ];
-    const cardW = 300, cardH = 240, gap = 30, baseX = 60, baseY = 470;
-    stats.forEach((s, i) => {
-      const x = baseX + i * (cardW + gap);
-      ctx.fillStyle = s[3];
-      ctx.strokeStyle = '#1a1a1a';
-      ctx.lineWidth = 6;
-      roundRect(ctx, x, baseY, cardW, cardH, 24);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#1a1a1a';
-      ctx.font = '700 56px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-      ctx.fillText(s[0], x + 28, baseY + 24);
-      ctx.font = '700 34px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-      ctx.fillText(s[1], x + 28, baseY + 100);
-      ctx.font = '900 96px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-      ctx.fillStyle = s[4];
-      ctx.fillText(String(s[2]), x + 28, baseY + 138);
+    /* 2. ミシン目フレーム（上下） */
+    ctx.strokeStyle = COLOR.ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(80, 300); ctx.lineTo(W - 80, 300); ctx.stroke();
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(80, 320); ctx.lineTo(W - 80, 320); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(80, 1800); ctx.lineTo(W - 80, 1800); ctx.stroke();
+    ctx.setLineDash([]);
+
+    /* 3. ヘッダー（媒体クレジット） */
+    ctx.fillStyle = COLOR.ink;
+    ctx.textAlign = 'left';
+    ctx.font = '900 34px ' + FONT.jp;
+    ctx.fillText('NAGOYA NINGEN', 80, 200);
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '300 22px ' + FONT.en;
+    ctx.fillText('Unofficial Field Log', 80, 232);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '500 22px ' + FONT.mono;
+    ctx.fillText('TICKET STUB', W - 80, 200);
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '500 18px ' + FONT.mono;
+    /* シリアル風：本日付ベース */
+    const today = new Date();
+    const serial = 'No. ' + String(today.getDate()).padStart(2,'0') + (today.getMonth()+1).toString().padStart(2,'0') + ' / 2026';
+    ctx.fillText(serial, W - 80, 232);
+
+    /* 4. メインタイトル */
+    ctx.textAlign = 'center';
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '900 56px ' + FONT.en;
+    ctx.fillText('MORIMICHI ICHIBA', W/2, 470);
+    ctx.font = '500 38px ' + FONT.jp;
+    ctx.fillText('森道市場', W/2, 530);
+    ctx.font = '900 84px ' + FONT.en;
+    ctx.fillText('2026.05.22 — 24', W/2, 650);
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '300 28px ' + FONT.jp;
+    ctx.fillText('ラグーナビーチ ／ 蒲郡', W/2, 700);
+
+    /* 5. キャッチコピー（中央・抑制された強調） */
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '500 38px ' + FONT.jp;
+    ctx.fillText('2026 年の、わたしの森道。', W/2, 800);
+
+    /* 6. 2項目の数値ブロック（巡った／持ち越し） */
+    ctx.strokeStyle = COLOR.ink;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(W/2, 870); ctx.lineTo(W/2, 1180); ctx.stroke();
+
+    /* 左セル：巡った */
+    ctx.textAlign = 'center';
+    ctx.fillStyle = COLOR.crimson;
+    ctx.font = '500 26px ' + FONT.mono;
+    ctx.fillText('01', W/4, 920);
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '900 42px ' + FONT.jp;
+    ctx.fillText('巡った', W/4, 980);
+    ctx.font = '900 160px ' + FONT.en;
+    ctx.fillText(String(visited), W/4, 1110);
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '300 24px ' + FONT.en;
+    ctx.fillText('stops · Visited', W/4, 1155);
+
+    /* 右セル：持ち越し */
+    ctx.fillStyle = COLOR.crimson;
+    ctx.font = '500 26px ' + FONT.mono;
+    ctx.fillText('02', W*3/4, 920);
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '900 42px ' + FONT.jp;
+    ctx.fillText('持ち越し', W*3/4, 980);
+    ctx.font = '900 160px ' + FONT.en;
+    ctx.fillText(String(nextYr), W*3/4, 1110);
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '300 24px ' + FONT.en;
+    ctx.fillText('stops · Next Year', W*3/4, 1155);
+
+    /* 7. FIELD NOTES（メモ抜粋を最大3行） */
+    ctx.textAlign = 'left';
+    ctx.fillStyle = COLOR.crimson;
+    ctx.font = '500 22px ' + FONT.mono;
+    ctx.fillText('FIELD NOTES', 80, 1280);
+    /* 罫線10本（薄く） */
+    ctx.strokeStyle = COLOR.muted;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const y = 1320 + i * 44;
+      ctx.beginPath(); ctx.moveTo(80, y); ctx.lineTo(W - 80, y); ctx.stroke();
+    }
+    /* メモ本文の抜粋を最大3行（visited のうちメモを持つもの） */
+    const notedShops = SHOPS
+      .filter(s => isVisited(s.id) && hasNote(s.id))
+      .slice(0, 3);
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '500 24px ' + FONT.jp;
+    notedShops.forEach((s, i) => {
+      const note = getNote(s.id);
+      const body = note.body
+        ? note.body.replace(/\n+/g, ' ').slice(0, 30)
+        : (note.tags.length ? note.tags.map(t => '＃' + t).join(' ') : '');
+      const text = s.name + ' — ' + body;
+      ctx.fillText(text.slice(0, 38), 90, 1310 + i * 44);
     });
-
-    /* リストヘッダ */
-    ctx.fillStyle = '#1a1a1a';
-    ctx.font = '700 36px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-    ctx.fillText('🛍️ 行きたい出店 ' + state.fav.shops.length + ' 店', 60, 800);
-
-    /* 行きたい出店一覧（上位 12 まで） */
-    const wishlistShops = SHOPS.filter(s => isFav('shops', s.id)).slice(0, 12);
-    ctx.font = '500 30px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-    wishlistShops.forEach((s, i) => {
-      const y = 880 + i * 52;
-      const v = isVisited(s.id) ? '✅ ' : '';
-      const ny = isNextYear(s.id) ? '🌱 ' : '';
-      const name = (v + ny + s.name).slice(0, 32);
-      ctx.fillText('・' + name, 80, y);
-    });
-    if (state.fav.shops.length > 12) {
-      ctx.fillStyle = '#5a5a5a';
-      ctx.font = '500 26px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-      ctx.fillText('… ほか ' + (state.fav.shops.length - 12) + ' 店', 80, 880 + 12 * 52 + 20);
+    /* メモがない場合は控えめなプレースホルダ */
+    if (notedShops.length === 0) {
+      ctx.fillStyle = COLOR.sub;
+      ctx.font = '300 22px ' + FONT.jp;
+      ctx.fillText('メモを残すと、ここに記録されます。', 90, 1310);
     }
 
-    /* フッター */
-    ctx.fillStyle = '#1a1a1a';
-    ctx.font = '500 26px system-ui, -apple-system, "Hiragino Sans", sans-serif';
-    ctx.fillText('森道ガイド（非公式）', 60, H - 100);
-    ctx.fillStyle = '#5a5a5a';
-    ctx.fillText(APP_URL, 60, H - 60);
+    /* 8. 朱印（角印モチーフ） */
+    const stampX = W - 220, stampY = 1610, stampS = 140;
+    ctx.fillStyle = COLOR.crimson;
+    ctx.fillRect(stampX, stampY, stampS, stampS);
+    ctx.strokeStyle = COLOR.paper;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(stampX + 10, stampY + 10, stampS - 20, stampS - 20);
+    ctx.fillStyle = COLOR.paper;
+    ctx.textAlign = 'center';
+    ctx.font = '900 48px ' + FONT.jp;
+    ctx.fillText('巡', stampX + stampS/2, stampY + 60);
+    ctx.fillText('礼', stampX + stampS/2, stampY + 115);
 
+    /* 朱印の左にメタ情報（気になっていた件数を控えめに） */
+    ctx.textAlign = 'left';
+    ctx.fillStyle = COLOR.ink;
+    ctx.font = '500 22px ' + FONT.mono;
+    ctx.fillText('VISITED 2026', 80, 1640);
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '300 22px ' + FONT.jp;
+    if (wishlist > 0) {
+      ctx.fillText('Wishlist  ' + wishlist + ' 店', 80, 1680);
+    }
+
+    /* 9. フッター */
+    ctx.textAlign = 'center';
+    ctx.fillStyle = COLOR.sub;
+    ctx.font = '500 18px ' + FONT.jp;
+    ctx.fillText('Generated by Nagoya Ningen ／ Unofficial Guide for Morimichi 2026', W/2, 1850);
+    ctx.font = '300 16px ' + FONT.en;
+    ctx.fillText('nagoya-ningen.github.io/morimichi-app', W/2, 1880);
+
+    /* 出力 */
     canvas.toBlob((blob) => {
       if (!blob) { toast('画像の生成に失敗しました'); return; }
-      const file = new File([blob], 'morimichi2026-myplan.png', { type: 'image/png' });
-      /* navigator.share でファイル共有できる端末ならそのまま共有 */
+      const file = new File([blob], 'morimichi2026-ticket-stub.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file], title: '私の森道市場2026', text: '私のマイプラン' })
-          .catch(() => {/* キャンセル等は無視 */});
+        navigator.share({
+          files: [file],
+          title: '2026 年の、わたしの森道。',
+          text: '今年の森道、巡ったのは ' + visited + ' 店。来年に持ち越したのが ' + nextYr + ' 店。\n#森道市場2026 #森道市場'
+        }).catch(() => {});
         return;
       }
-      /* 非対応：ダウンロード */
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = 'morimichi2026-myplan.png';
+      a.href = url; a.download = 'morimichi2026-ticket-stub.png';
       document.body.appendChild(a); a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
       toast('画像をダウンロードしました');
