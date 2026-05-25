@@ -499,18 +499,8 @@
       '必ず <a href="' + FESTIVAL.official +
       '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
 
-    /* マイページ拡張のお知らせバナー。
-       開催後の振り返り体験として「行った・来年・メモ」が増えた告知。
-       クリックでマイページへ直接遷移。 */
-    const apb = el('button', 'afterparty-banner afterparty-banner--myplan',
-      `<div class="afterparty-banner__ico">📒</div>
-       <div class="afterparty-banner__body">
-         <div class="afterparty-banner__title">マイページが新しくなりました</div>
-         <div class="afterparty-banner__desc">行った・来年も行きたい・メモが残せるように</div>
-       </div>
-       <div class="afterparty-banner__arr">›</div>`);
-    apb.onclick = () => switchView('myplan');
-    root.appendChild(apb);
+    /* （マイページ拡張のお知らせバナーは撤去。
+       下段の「MY PAGE」4セル紹介セクションに統合した。） */
 
     /* クイック */
     root.appendChild(secTitle('クイックメニュー', 'MENU'));
