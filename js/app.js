@@ -1869,29 +1869,26 @@
       }
       ctx.restore();
     }
-    drawSpaced('VOL.2026  /  MORIMICHI', 80, 180,
+    drawSpaced('VOL.2026  /  MORIMICHI', 80, 130,
       '500 18px ' + FONT.sans, COLOR.ivory, 4);
 
-    /* 3. 表紙タイトル「わたしの森道。」を雑誌タイトルとして大きく中央配置。
-       句点まで含めて1行で描く。画面幅に収まるよう、6文字+句点を 142px で。 */
+    /* 3. 表紙タイトル「わたしの森道。」を中央配置（フォントサイズ維持） */
     ctx.textAlign = 'center';
     ctx.fillStyle = COLOR.ivory;
     ctx.font = '700 142px ' + FONT.mincho;
-    ctx.fillText('わたしの森道。', W/2, 470);
+    ctx.fillText('わたしの森道。', W/2, 280);
 
     /* 4. 細い水平線（マスタード、幅50%、中央） */
     ctx.strokeStyle = COLOR.mustard;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(W/2 - 240, 540);
-    ctx.lineTo(W/2 + 240, 540);
+    ctx.moveTo(W/2 - 240, 350);
+    ctx.lineTo(W/2 + 240, 350);
     ctx.stroke();
 
-    /* 5. 特集タイトル（明朝、雑誌の特集コピー風）。
-       数字部分は色味を変えずに、文字組のみで強調。 */
+    /* 5. 特集タイトル（明朝、雑誌の特集コピー風） */
     ctx.fillStyle = COLOR.ivory;
     ctx.font = '500 62px ' + FONT.mincho;
-    /* 1行に収めるため数字によって文を選ぶ */
     let featureLine;
     if (visited > 0 && nextYr > 0) {
       featureLine = 'めぐった ' + visited + ' 店、来年の ' + nextYr + ' 店。';
@@ -1900,20 +1897,18 @@
     } else {
       featureLine = '来年こそは、' + nextYr + ' 店。';
     }
-    ctx.fillText(featureLine, W/2, 660);
+    ctx.fillText(featureLine, W/2, 460);
 
     /* 6. 目次見出し（左寄せ、マスタード、等幅小） */
     ctx.textAlign = 'left';
     function drawSectionHead(label, count, y) {
       drawSpaced(label, 80, y, '500 18px ' + FONT.mono, COLOR.mustard, 2);
-      /* 右側に「— 12」のように件数を細く */
       ctx.textAlign = 'right';
       ctx.fillStyle = COLOR.mustard;
       ctx.font = '500 18px ' + FONT.mono;
       ctx.fillText('— ' + count, W - 80, y);
       ctx.textAlign = 'left';
     }
-    /* 細い罫線（マスタード、見出し下） */
     function drawHairUnder(y) {
       ctx.strokeStyle = COLOR.mustard;
       ctx.lineWidth = 0.8;
@@ -1923,29 +1918,41 @@
       ctx.stroke();
     }
 
-    /* 店舗リスト描画関数：2列で番号+名前を雑誌の目次風に並べる。
-       読み順は左列上→左列下→右列上→右列下（雑誌の目次の慣習）。
-       1列に並べたとき：左列上端→下端→右列上端→下端 */
+    /* 店舗リスト描画：2列。フォントサイズは維持（番号22px等幅・名前26px明朝）、
+       行高だけ調整して 30 件（15段×2列）入るようにする。
+       店名の切り詰めは「文字数」ではなく measureText の「ピクセル幅」で行い、
+       横にできる限り多くの文字を載せる。 */
+    function trimByWidth(text, maxWidth) {
+      if (ctx.measureText(text).width <= maxWidth) return text;
+      let s = text;
+      while (s.length > 0) {
+        s = s.slice(0, -1);
+        if (ctx.measureText(s + '…').width <= maxWidth) return s + '…';
+      }
+      return '…';
+    }
     function drawShopList2Col(items, startY, maxPerCol, lineH) {
       ctx.textAlign = 'left';
       const cap = maxPerCol * 2;
       const willOverflow = items.length > cap;
       const showCount = willOverflow ? cap - 1 : Math.min(items.length, cap);
-      const colX = [80, 580];
-      const nameX = [140, 640];
+      const colX  = [80, 580];   /* 番号の x（左／右カラム） */
+      const nameX = [128, 628];  /* 店名の x（番号からのインデント） */
+      /* 各列の店名最大幅（右端まで／中央分割を超えないように） */
+      const COL_END = [560, 1060];  /* 各列の右端 */
+      const maxNameW = [COL_END[0] - nameX[0] - 6, COL_END[1] - nameX[1] - 6];
       for (let i = 0; i < showCount; i++) {
         const col = Math.floor(i / maxPerCol);
         const row = i % maxPerCol;
         const y = startY + row * lineH;
         const n = String(i + 1).padStart(2, '0');
-        const name = items[i].name;
-        const trimmed = name.length > 14 ? name.slice(0, 14) + '…' : name;
         ctx.fillStyle = COLOR.mustard;
         ctx.font = '500 22px ' + FONT.mono;
         ctx.fillText(n, colX[col], y);
         ctx.fillStyle = COLOR.ivory;
         ctx.font = '500 26px ' + FONT.mincho;
-        ctx.fillText(trimmed, nameX[col], y);
+        const name = trimByWidth(items[i].name, maxNameW[col]);
+        ctx.fillText(name, nameX[col], y);
       }
       if (willOverflow) {
         const rest = items.length - showCount;
@@ -1964,23 +1971,33 @@
       }
     }
 
-    /* 7. VISITED 2026（めぐった）— 2列で最大16件 */
-    drawSectionHead('VISITED  2026', visited, 800);
-    drawHairUnder(818);
-    drawShopList2Col(visitedShops, 870, 8, 46);
+    /* 7. VISITED 2026（めぐった）— 2列 15段で最大30件
+       行高 38px、見出し→リスト→セクション間→次見出し→リスト→フッター
+       を 1920 高に収めるため、各セクションの開始位置を上に圧縮。 */
+    const VISITED_HEAD_Y = 555;
+    drawSectionHead('VISITED  2026', visited, VISITED_HEAD_Y);
+    drawHairUnder(VISITED_HEAD_Y + 18);
+    drawShopList2Col(visitedShops, VISITED_HEAD_Y + 55, 15, 38);
+    /* リスト終了 y: VISITED_HEAD_Y+55+(15-1)*38 = 1142 */
 
-    /* 8. WISHLIST 2027（来年こそは）— 2列で最大10件 */
-    const wishlistTop = 1320;
-    drawSectionHead('WISHLIST  2027', nextYr, wishlistTop);
-    drawHairUnder(wishlistTop + 18);
-    drawShopList2Col(nextYearShops, wishlistTop + 70, 5, 46);
+    /* 8. WISHLIST 2027（来年こそは）— 2列 15段で最大30件 */
+    const WISHLIST_HEAD_Y = 1190;
+    drawSectionHead('WISHLIST  2027', nextYr, WISHLIST_HEAD_Y);
+    drawHairUnder(WISHLIST_HEAD_Y + 18);
+    drawShopList2Col(nextYearShops, WISHLIST_HEAD_Y + 55, 15, 38);
+    /* リスト終了 y: 1190+55+14*38 = 1777 */
 
-    /* 9. 最下部の発行情報（マスタードと明朝の組み合わせ） */
-    drawSpaced('MORIMICHI ICHIBA  2026', 80, 1820,
+    /* 9. 最下部の発行情報（左寄せ）と #ハッシュタグ（右下） */
+    drawSpaced('MORIMICHI ICHIBA  2026', 80, 1840,
       '500 18px ' + FONT.sans, COLOR.mustard, 3);
     ctx.fillStyle = COLOR.ivory;
+    ctx.font = '500 20px ' + FONT.mincho;
+    ctx.fillText('5.22 - 24　ラグーナビーチ・蒲郡', 80, 1875);
+    /* ハッシュタグ（右下、accent 色で控えめサイズ） */
+    ctx.textAlign = 'right';
+    ctx.fillStyle = COLOR.mustard;
     ctx.font = '500 22px ' + FONT.mincho;
-    ctx.fillText('5.22 - 24　ラグーナビーチ・蒲郡', 80, 1860);
+    ctx.fillText('#わたしの森道', W - 80, 1875);
 
     return canvas;
   }
