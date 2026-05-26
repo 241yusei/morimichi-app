@@ -1881,21 +1881,21 @@
       }
       ctx.restore();
     }
-    drawSpaced('VOL.2026  /  MORIMICHI', 80, 130,
+    drawSpaced('VOL.2026  /  MORIMICHI', 80, 150,
       '500 18px ' + FONT.sans, COLOR.ivory, 4);
 
-    /* 3. 表紙タイトル「わたしの森道。」を中央配置（フォントサイズ維持） */
+    /* 3. 表紙タイトル「わたしの森道。」を中央配置（雑誌の表紙コピー） */
     ctx.textAlign = 'center';
     ctx.fillStyle = COLOR.ivory;
     ctx.font = '700 142px ' + FONT.mincho;
-    ctx.fillText('わたしの森道。', W/2, 280);
+    ctx.fillText('わたしの森道。', W/2, 320);
 
     /* 4. 細い水平線（マスタード、幅50%、中央） */
     ctx.strokeStyle = COLOR.mustard;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(W/2 - 240, 350);
-    ctx.lineTo(W/2 + 240, 350);
+    ctx.moveTo(W/2 - 240, 390);
+    ctx.lineTo(W/2 + 240, 390);
     ctx.stroke();
 
     /* 5. 特集タイトル（明朝、雑誌の特集コピー風） */
@@ -1909,7 +1909,7 @@
     } else {
       featureLine = '来年こそは、' + nextYr + ' 店。';
     }
-    ctx.fillText(featureLine, W/2, 460);
+    ctx.fillText(featureLine, W/2, 510);
 
     /* 6. 目次見出し（左寄せ、マスタード、等幅小） */
     ctx.textAlign = 'left';
@@ -1930,10 +1930,10 @@
       ctx.stroke();
     }
 
-    /* 店舗リスト描画：2列。フォントサイズは維持（番号22px等幅・名前26px明朝）、
-       行高だけ調整して 30 件（15段×2列）入るようにする。
-       店名の切り詰めは「文字数」ではなく measureText の「ピクセル幅」で行い、
-       横にできる限り多くの文字を載せる。 */
+    /* 店舗リスト描画：2列。Aデザイナーの提案にあった「余白で語る紙面」を
+       回復するため、行高 50px / 店名 30px / 番号 24px に少しだけ大きく。
+       1セクション 10段×2列＝最大20件。30件詰め込みで余白が消えていた
+       前回からの揺り戻し。 */
     function trimByWidth(text, maxWidth) {
       if (ctx.measureText(text).width <= maxWidth) return text;
       let s = text;
@@ -1948,10 +1948,9 @@
       const cap = maxPerCol * 2;
       const willOverflow = items.length > cap;
       const showCount = willOverflow ? cap - 1 : Math.min(items.length, cap);
-      const colX  = [80, 580];   /* 番号の x（左／右カラム） */
-      const nameX = [128, 628];  /* 店名の x（番号からのインデント） */
-      /* 各列の店名最大幅（右端まで／中央分割を超えないように） */
-      const COL_END = [560, 1060];  /* 各列の右端 */
+      const colX  = [80, 580];
+      const nameX = [134, 634];     /* 番号→名前のギャップ、フォント拡大に合わせて広めに */
+      const COL_END = [560, 1060];
       const maxNameW = [COL_END[0] - nameX[0] - 6, COL_END[1] - nameX[1] - 6];
       for (let i = 0; i < showCount; i++) {
         const col = Math.floor(i / maxPerCol);
@@ -1959,10 +1958,10 @@
         const y = startY + row * lineH;
         const n = String(i + 1).padStart(2, '0');
         ctx.fillStyle = COLOR.mustard;
-        ctx.font = '500 22px ' + FONT.mono;
+        ctx.font = '500 24px ' + FONT.mono;
         ctx.fillText(n, colX[col], y);
         ctx.fillStyle = COLOR.ivory;
-        ctx.font = '500 26px ' + FONT.mincho;
+        ctx.font = '500 30px ' + FONT.mincho;
         const name = trimByWidth(items[i].name, maxNameW[col]);
         ctx.fillText(name, nameX[col], y);
       }
@@ -1971,33 +1970,32 @@
         const col = Math.floor(showCount / maxPerCol);
         const row = showCount % maxPerCol;
         ctx.fillStyle = COLOR.ivory;
-        ctx.font = '300 22px ' + FONT.mincho;
+        ctx.font = '300 24px ' + FONT.mincho;
         ctx.fillText('& ' + rest + ' more', nameX[col], startY + row * lineH);
       }
       if (items.length === 0) {
         ctx.fillStyle = COLOR.ivory;
         ctx.globalAlpha = 0.5;
-        ctx.font = '300 22px ' + FONT.mincho;
+        ctx.font = '300 24px ' + FONT.mincho;
         ctx.fillText('—  まだ記録がありません', 80, startY);
         ctx.globalAlpha = 1;
       }
     }
 
-    /* 7. VISITED 2026（めぐった）— 2列 15段で最大30件
-       行高 38px、見出し→リスト→セクション間→次見出し→リスト→フッター
-       を 1920 高に収めるため、各セクションの開始位置を上に圧縮。 */
-    const VISITED_HEAD_Y = 555;
+    /* 7. VISITED 2026（めぐった）— 2列 10段で最大20件
+       行高 50・店名30 で余白あるレイアウトに戻す */
+    const VISITED_HEAD_Y = 640;
     drawSectionHead('VISITED  2026', visited, VISITED_HEAD_Y);
     drawHairUnder(VISITED_HEAD_Y + 18);
-    drawShopList2Col(visitedShops, VISITED_HEAD_Y + 55, 15, 38);
-    /* リスト終了 y: VISITED_HEAD_Y+55+(15-1)*38 = 1142 */
+    drawShopList2Col(visitedShops, VISITED_HEAD_Y + 70, 10, 50);
+    /* リスト終了 y: 640+70+9*50 = 1160 */
 
-    /* 8. WISHLIST 2027（来年こそは）— 2列 15段で最大30件 */
-    const WISHLIST_HEAD_Y = 1190;
+    /* 8. WISHLIST 2027（来年こそは）— 2列 10段で最大20件 */
+    const WISHLIST_HEAD_Y = 1240;
     drawSectionHead('WISHLIST  2027', nextYr, WISHLIST_HEAD_Y);
     drawHairUnder(WISHLIST_HEAD_Y + 18);
-    drawShopList2Col(nextYearShops, WISHLIST_HEAD_Y + 55, 15, 38);
-    /* リスト終了 y: 1190+55+14*38 = 1777 */
+    drawShopList2Col(nextYearShops, WISHLIST_HEAD_Y + 70, 10, 50);
+    /* リスト終了 y: 1240+70+9*50 = 1760 */
 
     /* 9. 最下部の発行情報（左寄せ）と #ハッシュタグ（右下） */
     drawSpaced('MORIMICHI ICHIBA  2026', 80, 1840,
