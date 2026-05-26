@@ -894,27 +894,16 @@ body.night .myplan-intro__desc{color:#c8b9a3;}
   content:"";position:absolute;top:0;left:22%;right:22%;height:3px;
   background:var(--red);
 }
-/* 中央のマイページタブを強調：少し大きめのアイコン＋赤の浮き上がりサークル。
-   ラベルはサークル下にずらして表示する。 */
-.tabbar__center{position:relative;}
-.tabbar__center::after{
-  content:"";position:absolute;top:2px;left:50%;transform:translateX(-50%);
-  width:44px;height:44px;border-radius:50%;
-  background:var(--red);border:2.5px solid var(--ink);
-  box-shadow:var(--hard);z-index:1;
-}
-.tabbar__center .ico{
-  position:relative;z-index:2;font-size:22px;margin-top:-2px;
-}
+/* 中央のマイページタブを「控えめに」強調：
+   赤丸サークルは廃止。ラベルを赤太字にして他タブとフラットに並べつつ、
+   その上に小さな点（インジケータ）で「ここがマイページ」を示す。 */
 .tabbar__center .lbl{
-  position:relative;z-index:2;color:var(--ink);font-weight:900;
-  letter-spacing:.02em;font-size:9.5px;margin-top:4px;
+  color:var(--red);font-weight:900;letter-spacing:.02em;
 }
-.tabbar__center.active::before{display:none;}
-.tabbar__center.active .lbl{color:var(--red);}
-.tabbar__center:active::after{transform:translateX(-50%) translate(1px,1px);box-shadow:1px 1px 0 var(--ink);}
-body.night .tabbar__center .lbl{color:var(--ink);}
-body.night .tabbar__center.active .lbl{color:var(--red);}
+.tabbar__center::after{
+  content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  width:5px;height:5px;border-radius:50%;background:var(--red);
+}
 .tabbar button .badge{
   position:absolute;top:3px;right:50%;margin-right:-22px;
   background:var(--red);color:#fff;font-size:8px;font-weight:800;
