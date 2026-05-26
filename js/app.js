@@ -738,6 +738,10 @@
          </div>
        </div>`;
     root.appendChild(wrap);
+    root.appendChild(el('div', 'notice',
+      'ℹ️ 出典：森、道、市場 公式発表の会場マップ。最新版は ' +
+      '<a href="' + FESTIVAL.links.map + '" target="_blank" rel="noopener">' +
+      '公式サイト</a> をご確認ください。本アプリは非公式ファンガイドです。'));
 
     root.appendChild(el('div', 'map-hint', state.planMode
       ? 'マイプランに登録した出店を、エリアごとの📍ピンで表示しています。下の一覧で店をタップすると、その店の詳しい位置を確認できます。'
@@ -1232,9 +1236,9 @@
     root.innerHTML = '';
     const d = FESTIVAL.days.find(x => x.id === state.day);
     root.appendChild(el('div', 'notice',
-      'ℹ️ 公式発表のタイムテーブルです。最新版は ' +
+      'ℹ️ 出典：森、道、市場 公式発表のタイムテーブル。最新版は ' +
       '<a href="' + FESTIVAL.links.timetable + '" target="_blank" rel="noopener">' +
-      '公式サイト</a> もご確認ください。'));
+      '公式サイト</a> をご確認ください。本アプリは非公式ファンガイドです。'));
     root.appendChild(secTitle(d.label + ' ' + d.dow + ' タイムテーブル', 'TIMETABLE'));
     root.appendChild(el('div', 'map-hint',
       'ピンチ／ダブルタップ／＋－ボタンで拡大できます。'));

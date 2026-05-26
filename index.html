@@ -3,15 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>森、道、市場 2026 ガイド</title>
-<meta name="description" content="森、道、市場2026の非公式ガイドアプリ。会場マップ・出店・タイムテーブル・出演者をすぐに確認。">
+<title>森、道、市場 2026 非公式ファンアプリ | ナゴヤ人間</title>
+<meta name="description" content="個人メディア「ナゴヤ人間」制作の非公式ファンガイド。会場マップ・出店・タイムテーブル・出演者・わたしの森道（マイページ）。主催・運営とは関係ありません。最新情報は公式サイトをご確認ください。">
 <meta name="theme-color" content="#de1815">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="森道2026">
+
+<!-- Open Graph / Twitter Card -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ナゴヤ人間">
+<meta property="og:title" content="森、道、市場 2026 非公式ファンアプリ">
+<meta property="og:description" content="ナゴヤ人間が個人で作った、森、道、市場2026の非公式ファンガイド。マップ・タイテ・出店・わたしの森道。主催・運営とは関係ありません。">
+<meta property="og:url" content="https://nagoya-ningen.github.io/morimichi-app/">
+<meta property="og:image" content="https://nagoya-ningen.github.io/morimichi-app/img/icon-512.png">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:site" content="@nagoya_ningen">
+<meta name="twitter:creator" content="@nagoya_ningen">
+
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="img/icon-192.png">
 <link rel="icon" type="image/png" href="img/icon-192.png">
+<link rel="canonical" href="https://nagoya-ningen.github.io/morimichi-app/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="css/style.css">
@@ -26,10 +40,10 @@
 
 <header class="app-header">
   <div class="app-header__top">
-    <div class="app-header__title">
+    <h1 class="app-header__title">
       森、道、市場 <span class="mark en">2026</span>
       <span class="unofficial-tag">非公式ファンアプリ</span>
-    </div>
+    </h1>
     <div class="app-header__right">
       <button class="icon-btn" id="nightBtn" aria-label="表示モード切替">🌙</button>
       <div class="app-header__clock en" id="clock">--:--</div>
@@ -38,8 +52,8 @@
   <div class="day-tabs" id="dayTabs"></div>
   <div class="marquee" role="status" aria-live="polite">
     <div class="marquee__track">
-      <span class="marquee__text">森道市場2026終了。参加者・出展者・アーティスト・運営のみなさまお疲れ様でした。明日から森道ロスで頑張りましょう。</span>
-      <span class="marquee__text" aria-hidden="true">森道市場2026終了。参加者・出展者・アーティスト・運営のみなさまお疲れ様でした。明日から森道ロスで頑張りましょう。</span>
+      <span class="marquee__text">森、道、市場2026は終了しました。次回は2027年5月開催予定（公式発表ベース）。本アプリはナゴヤ人間制作の非公式ファンガイドです。最新情報は公式サイトでご確認ください。</span>
+      <span class="marquee__text" aria-hidden="true">森、道、市場2026は終了しました。次回は2027年5月開催予定（公式発表ベース）。本アプリはナゴヤ人間制作の非公式ファンガイドです。最新情報は公式サイトでご確認ください。</span>
     </div>
   </div>
 </header>
@@ -52,6 +66,19 @@
   <section class="view pad" id="view-shops"></section>
   <section class="view pad" id="view-myplan"></section>
 </main>
+
+<footer class="app-footer" role="contentinfo">
+  <p class="app-footer__notice">
+    本アプリは <b>非公式ファンガイド</b>です。「森、道、市場」実行委員会・運営事務局・出演者・出店者とは一切関係ありません。
+    最新かつ正確な情報は <a href="https://morimichiichiba.jp/" target="_blank" rel="noopener">公式サイト</a> をご確認ください。
+  </p>
+  <p class="app-footer__credit">
+    制作：個人メディア <a href="https://nagoya-ningen.github.io/" target="_blank" rel="noopener">ナゴヤ人間</a>
+    ／ <a href="terms.html">利用規約</a>
+    ／ <a href="privacy.html">プライバシー</a>
+    ／ <a href="https://github.com/nagoya-ningen/morimichi-app/issues" target="_blank" rel="noopener">不具合・誤情報の報告</a>
+  </p>
+</footer>
 
 <div class="modal-bg" id="modalBg">
   <div class="modal" id="modalBody" role="dialog" aria-modal="true" aria-label="詳細"></div>

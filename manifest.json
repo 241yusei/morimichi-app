@@ -1,15 +1,15 @@
 {
   "id": "/morimichi-app/",
-  "name": "森、道、市場 2026 ガイド",
+  "name": "森、道、市場 2026 非公式ファンアプリ",
   "short_name": "森道2026",
-  "description": "森、道、市場2026のマップ・タイムテーブル・出店・アーティストガイド",
+  "description": "ナゴヤ人間制作の非公式ファンガイド。マップ・タイテ・出店・わたしの森道。主催・運営とは関係ありません。",
   "lang": "ja",
   "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#de1815",
+  "background_color": "#ffffff",
   "theme_color": "#de1815",
   "categories": ["events", "music", "navigation"],
   "icons": [
