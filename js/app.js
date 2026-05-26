@@ -1702,11 +1702,18 @@
     root.appendChild(wrap);
   }
 
-  /* テキストシェア：マイプランの総数を読みやすい一文にまとめてシェア（絵文字なし） */
+  /* テキストシェア：マイプランの総数を読みやすい一文にまとめてシェア（絵文字なし）。
+     visited / nextYear のどちらも 0 のときは「まだ記録がありません」と案内し、
+     不自然なシェアを防ぐ。 */
   function shareMyplanText() {
     const v = state.visited.length;
     const n = state.nextYear.length;
-    const lines = ['今年の森道、めぐったのは ' + v + ' 店。'];
+    if (v === 0 && n === 0) {
+      toast('「行った」または「来年こそは」を登録してからシェアできます');
+      return;
+    }
+    const lines = [];
+    if (v > 0) lines.push('今年の森道、めぐったのは ' + v + ' 店。');
     if (n > 0) lines.push('来年こそは ' + n + ' 店。');
     lines.push('');
     lines.push('#森道市場2026 #森道市場');
@@ -1867,8 +1874,13 @@
   }
 
   /* プレビューモーダル：書き出し前に画像を確認、シェア／保存。
-     iOS では img の長押しでカメラロール保存も可能。 */
+     iOS では img の長押しでカメラロール保存も可能。
+     データが空の場合は案内のみ。 */
   function showMyplanImagePreview() {
+    if (state.visited.length === 0 && state.nextYear.length === 0) {
+      toast('「行った」または「来年こそは」を登録してからシェアできます');
+      return;
+    }
     const canvas = generateMyplanCanvas();
     const dataUrl = canvas.toDataURL('image/png');
     openModal(
@@ -1978,14 +1990,21 @@
         /* visited / nextYear は文字列配列 */
         const vis = strArr(d.visited); if (vis) state.visited = vis;
         const ny  = strArr(d.nextYear); if (ny)  state.nextYear = ny;
-        /* notes は {[id]: NoteObj}。各 NoteObj を setNote 経由でサニタイズ */
+        /* notes は {[id]: NoteObj}。要素単位で型検証してから移植。
+           setNote を経由すると updatedAt が現在時刻で上書きされてしまうため、
+           インポート時はファイル側の updatedAt を尊重する。 */
         if (d.notes && typeof d.notes === 'object' && !Array.isArray(d.notes)) {
           state.notes = {};
           for (const id of Object.keys(d.notes)) {
             const n = d.notes[id];
-            if (n && typeof n === 'object' && !Array.isArray(n)) {
-              setNote(id, n);
-            } else { skipped++; }
+            if (!n || typeof n !== 'object' || Array.isArray(n)) { skipped++; continue; }
+            const tags = Array.isArray(n.tags) ? [...new Set(n.tags.filter(t => typeof t === 'string'))] : [];
+            let body = typeof n.body === 'string' ? n.body : '';
+            const arr = [...body];
+            if (arr.length > 500) body = arr.slice(0, 500).join('');
+            const updatedAt = typeof n.updatedAt === 'number' ? n.updatedAt : 0;
+            if (tags.length === 0 && body.length === 0) continue;
+            state.notes[id] = { tags, body, updatedAt };
           }
         }
         /* checks はオブジェクト */
@@ -2038,10 +2057,14 @@
   function closeModal(fromPop) {
     const bg = $('#modalBg');
     if (!bg.classList.contains('open')) return;
-    /* メモ入力中に閉じられても未確定分を確実に保存する。
-       _noteSaveTimer が走っていればキャンセルして即時 save。 */
-    if (_noteSaveTimer) { clearTimeout(_noteSaveTimer); _noteSaveTimer = null; }
-    saveNotes();
+    /* メモ入力中に閉じられた場合のみ未確定分を保存。
+       タイマーが無い場合（メモを開いていないモーダル）は何もしない＝
+       関係ないモーダルの開閉で localStorage 書き込みを発生させない。 */
+    if (_noteSaveTimer) {
+      clearTimeout(_noteSaveTimer);
+      _noteSaveTimer = null;
+      saveNotes();
+    }
     bg.classList.remove('open');
     if (modalOpen && !fromPop) {
       modalOpen = false;
@@ -2312,19 +2335,27 @@
     switchView('home');
     updateTabBadge();
     /* シェアURL（#shop=sN）で来訪した場合、該当出店のモーダルを自動で開く。
-       存在しないIDは無視。お礼ポップアップとの競合を避けるため、ポップアップ評価より先に処理。 */
+       hash はモーダル表示後に消し、リロードで何度も開く挙動を防ぐ。
+       hash 来訪時は初回ポップアップとの競合を避けるため、ポップアップを抑止する。 */
+    let hashHandled = false;
     try {
       const h = (location.hash || '').replace(/^#/, '');
       const m = /^shop=(.+)$/.exec(h);
       if (m) {
         const target = decodeURIComponent(m[1]);
         if (SHOPS.some(s => s.id === target)) {
+          hashHandled = true;
+          /* リロード時のループを防ぐため hash を即削除 */
+          try { history.replaceState({}, '', location.pathname + location.search); } catch (e) {}
           setTimeout(() => openShop(target), 200);
         }
       }
     } catch (e) {}
-    /* 初期描画が落ち着いてからお礼ポップアップを評価（一度きり表示） */
-    setTimeout(showThanksPopupIfFirst, 300);
+    /* 初期描画が落ち着いてからお礼ポップアップを評価（一度きり表示）。
+       hash で出店モーダルを開いている場合はポップアップを抑止する。 */
+    if (!hashHandled) {
+      setTimeout(showThanksPopupIfFirst, 300);
+    }
   }
   document.addEventListener('DOMContentLoaded', init);
 })();
