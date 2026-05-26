@@ -671,20 +671,30 @@
     input.oninput = e => { state.mapShopQuery = e.target.value; renderMapSug(); };
     input.onfocus = () => { if (!state.mapShopQuery.trim()) renderMapSug(); };
 
-    /* マイプラン動線表示中バナー（行きたい出店が0件なら通常表示に戻す） */
-    if (state.planMode && !SHOPS.some(s => isFav('shops', s.id))) {
+    /* マイプラン全件のユニーク数（行きたい・行った・来年の和集合） */
+    const planIds = new Set();
+    state.fav.shops.forEach(id => planIds.add(id));
+    state.visited.forEach(id => planIds.add(id));
+    state.nextYear.forEach(id => planIds.add(id));
+    /* マイプラン動線表示中バナー（マイプラン全件が0なら通常表示に戻す） */
+    if (state.planMode && planIds.size === 0) {
       state.planMode = false;
     }
     if (state.planMode) {
-      const favShops = SHOPS.filter(s => isFav('shops', s.id));
       const sc = el('div', 'map-selected map-selected--plan');
       sc.innerHTML =
         `<span class="ico">🗺️</span>
-         <div class="t"><b>マイプランの出店 ${favShops.length}店を表示中</b>
-         <p>エリアごとのピンで回る順番を考えられます</p></div>
+         <div class="t"><b>マイプランの出店 ${planIds.size}店を表示中</b>
+         <p>行きたい・行った・来年を色分けで表示しています</p></div>
          <button class="x" aria-label="解除">✕</button>`;
       sc.querySelector('.x').onclick = () => { state.planMode = false; renderMap(); };
       root.appendChild(sc);
+    } else if (planIds.size > 0 && !state.highlightShop && !state.selectedZone) {
+      /* マイプラン未表示で記録がある場合、起動トグルを上部に提示 */
+      const tb = el('button', 'map-plan-toggle',
+        'マイプランの出店 ' + planIds.size + ' 店をマップに表示');
+      tb.onclick = () => { state.planMode = true; renderMap(); };
+      root.appendChild(tb);
     } else if (state.highlightShop) {
       /* 選択中ショップ表示 */
       const s = SHOPS.find(x => x.id === state.highlightShop);
@@ -816,19 +826,45 @@
         ? SHOPS.find(x => x.id === state.highlightShop) : null);
       /* ステージ・入口のピンは廃止（会場マップ画像に名称が印字済みで、
          ピンが多いと地図が見づらくなるため）。 */
-      /* マイプラン：行きたい出店をエリアごとにピン表示（動線設計用） */
+      /* マイプラン：行きたい・行った・来年をエリアごとにピン表示。
+         ピン本体の色は「行った > 来年 > 行きたい」の優先順位で決定し、
+         複数状態がある場合は小ドットで他の状態も併示する。 */
       if (state.planMode) {
         const byZone = {};
-        SHOPS.filter(s => isFav('shops', s.id)).forEach(s => {
-          (byZone[s.zone] = byZone[s.zone] || []).push(s);
+        function regZone(s, kind) {
+          const z = byZone[s.zone] = byZone[s.zone] ||
+            { ids: new Set(), kinds: { wishlist:0, visited:0, nextyear:0 }, zoneName: s.zoneName };
+          z.ids.add(s.id);
+          z.kinds[kind]++;
+        }
+        SHOPS.forEach(s => {
+          let hit = false;
+          if (isFav('shops', s.id)) { regZone(s, 'wishlist'); hit = true; }
+          if (isVisited(s.id))      { regZone(s, 'visited');  hit = true; }
+          if (isNextYear(s.id))     { regZone(s, 'nextyear'); hit = true; }
+          if (hit) {/* nop */}
         });
         Object.keys(byZone).forEach(zone => {
           const venue = ZONE_VENUE[zone];
           if (!venue) return;
-          const list = byZone[zone];
-          const pp = el('div', 'pin pin--plan',
-            `<div class="plan-pin__dot"><span>${list.length}</span></div>
-             <div class="plan-pin__label">${esc(shortName(list[0].zoneName))}</div>`);
+          const z = byZone[zone];
+          /* メインカラー優先順位：行った > 来年 > 行きたい */
+          let main = 'wishlist';
+          if (z.kinds.visited > 0)      main = 'visited';
+          else if (z.kinds.nextyear > 0) main = 'nextyear';
+          /* サブドット（他の状態が共存する時だけ表示） */
+          const subs = [];
+          if (main !== 'visited'  && z.kinds.visited  > 0) subs.push('visited');
+          if (main !== 'nextyear' && z.kinds.nextyear > 0) subs.push('nextyear');
+          if (main !== 'wishlist' && z.kinds.wishlist > 0) subs.push('wishlist');
+          const subDots = subs.length
+            ? '<div class="plan-pin__subs">' +
+              subs.map(k => '<span class="plan-pin__sub plan-pin__sub--' + k + '"></span>').join('') +
+              '</div>'
+            : '';
+          const pp = el('div', 'pin pin--plan pin--plan-' + main,
+            '<div class="plan-pin__dot"><span>' + z.ids.size + '</span></div>' + subDots +
+            '<div class="plan-pin__label">' + esc(shortName(z.zoneName)) + '</div>');
           pp.dataset.zx = venue[0] + venue[2] / 2;
           pp.dataset.zy = venue[1] + venue[3] / 2;
           layer.appendChild(pp);
@@ -1119,36 +1155,51 @@
   function renderPlanPanel() {
     const zp = $('#zonePanel');
     if (!zp) return;
-    const favShops = SHOPS.filter(s => isFav('shops', s.id));
-    if (!favShops.length) {
+    /* 行きたい・行った・来年 の和集合を出して、状態タグつきで一覧する */
+    const planShops = SHOPS.filter(s =>
+      isFav('shops', s.id) || isVisited(s.id) || isNextYear(s.id));
+    if (!planShops.length) {
       zp.innerHTML = '<div class="card"><div class="now-empty">' +
-        'マイプランに行きたい出店がありません。出店ページで★を付けると、' +
-        'ここに会場内の動線が表示されます。</div></div>';
+        'マイプランに登録された出店がありません。出店ページから★や「行った」「来年こそは」を' +
+        'チェックすると、ここに動線が表示されます。</div></div>';
       return;
     }
     /* エリアごとにまとめる（出店一覧の並び順を保つ） */
     const byZone = {}, order = [];
-    favShops.forEach(s => {
+    planShops.forEach(s => {
       if (!byZone[s.zone]) { byZone[s.zone] = []; order.push(s.zone); }
       byZone[s.zone].push(s);
     });
+    /* 凡例（行った・来年・行きたい の3色） */
     zp.innerHTML =
-      `<div class="card zone-panel">
-         <div class="zone-panel__head"><span style="font-size:22px">🗺️</span>
-           <b>マイプランの動線</b></div>
-         <div style="font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px">
-           行きたい出店 ${favShops.length}店／${order.length}エリア — 店名タップで詳しい位置へ</div>
-       </div>`;
+      '<div class="card zone-panel">' +
+        '<div class="zone-panel__head"><span style="font-size:22px">🗺️</span>' +
+          '<b>マイプランの動線</b></div>' +
+        '<div class="plan-legend">' +
+          '<span class="plan-legend__chip plan-legend__chip--visited">行った</span>' +
+          '<span class="plan-legend__chip plan-legend__chip--nextyear">来年こそは</span>' +
+          '<span class="plan-legend__chip plan-legend__chip--wishlist">行きたい</span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px">' +
+          planShops.length + '店／' + order.length + 'エリア — 店名タップで詳しい位置へ</div>' +
+      '</div>';
     const card = zp.querySelector('.zone-panel');
     order.forEach(zone => {
       const list = byZone[zone];
       card.appendChild(el('div', null,
-        `<div style="font-size:11.5px;font-weight:800;margin:10px 0 2px">
-         📍 ${esc(shortName(list[0].zoneName))}（${list.length}）</div>`));
+        '<div style="font-size:11.5px;font-weight:800;margin:10px 0 2px">' +
+        '📍 ' + esc(shortName(list[0].zoneName)) + '（' + list.length + '）</div>'));
       list.forEach(s => {
+        /* 各店の状態タグを優先順位（visited > nextyear > wishlist）で1〜複数表示 */
+        const tags = [];
+        if (isVisited(s.id))      tags.push('<span class="zone-shop__tag zone-shop__tag--visited">行った</span>');
+        if (isNextYear(s.id))     tags.push('<span class="zone-shop__tag zone-shop__tag--nextyear">来年</span>');
+        if (isFav('shops', s.id)) tags.push('<span class="zone-shop__tag zone-shop__tag--wishlist">行きたい</span>');
         const row = el('div', 'zone-shop',
-          `<span class="ico">${s.catIcon}</span>
-           <span class="nm">${esc(s.name)}</span><span class="arr">›</span>`);
+          '<span class="ico">' + s.catIcon + '</span>' +
+          '<span class="nm">' + esc(s.name) + '</span>' +
+          '<span class="zone-shop__tags">' + tags.join('') + '</span>' +
+          '<span class="arr">›</span>');
         row.onclick = () => {
           pushRecent('shops', s.id);
           state.planMode = false;
@@ -1576,10 +1627,33 @@
         emptyMsg = '<div class="big">🛍️</div>行きたい出店を登録すると<br>ここに一覧表示されます';
       } else if (sub === 'visited') {
         list = SHOPS.filter(s => isVisited(s.id));
-        emptyMsg = '<div class="big">✅</div>出店モーダルで「行った」をタップすると<br>ここに一覧表示されます';
+        emptyMsg = '<div class="big">✅</div>出店をタップして「行った」を選ぶと<br>ここに記録されます';
       } else {
         list = SHOPS.filter(s => isNextYear(s.id));
-        emptyMsg = '<div class="big">🌱</div>「来年も行きたい」と思った出店を<br>モーダルからチェックして残しておきましょう';
+        emptyMsg = '<div class="big">🌱</div>「来年こそは」と思った出店を<br>出店から登録して残しておきましょう';
+      }
+
+      /* 3軸とも 0 件のオンボーディング。第2層チップの直下に3ステップで使い方を案内 */
+      const totalCount = subCounts.wishlist + subCounts.visited + subCounts.nextyear;
+      if (totalCount === 0) {
+        const ob = el('div', 'myplan-onboard');
+        ob.innerHTML =
+          '<div class="myplan-onboard__head">マイページの使い方</div>' +
+          '<ol class="myplan-onboard__list">' +
+            '<li><span class="myplan-onboard__n">1</span>' +
+              '<div><b>出店ページから ☆ を押す</b>' +
+              '<p>気になる店を「行きたい出店」に追加します。</p></div></li>' +
+            '<li><span class="myplan-onboard__n">2</span>' +
+              '<div><b>出店をタップしてステータスを選ぶ</b>' +
+              '<p>「行きたい」「行った」「来年こそは」を切り替えられます。</p></div></li>' +
+            '<li><span class="myplan-onboard__n">3</span>' +
+              '<div><b>ここに溜まる／画像でシェア</b>' +
+              '<p>「行った」「来年こそは」が溜まると、1枚の画像で残せます。</p></div></li>' +
+          '</ol>';
+        const goShops = el('button', 'myplan-onboard__btn', '出店ページを開く');
+        goShops.onclick = () => switchView('shops');
+        ob.appendChild(goShops);
+        root.appendChild(ob);
       }
 
       /* wishlist サブタブの最上段：マイプランをシェアボタン。
@@ -1617,7 +1691,10 @@
       }
 
       if (!list.length) {
-        root.appendChild(el('div', 'empty', emptyMsg));
+        /* 3軸とも0件のときはオンボーディングを優先表示し、empty state は出さない */
+        if (totalCount > 0) {
+          root.appendChild(el('div', 'empty', emptyMsg));
+        }
         appendMyplanSettings(root);
         return;
       }
