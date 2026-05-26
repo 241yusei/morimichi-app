@@ -549,13 +549,35 @@ main{
 .tile__fav{position:absolute;top:2px;right:2px;font-size:20px;
   width:44px;height:44px;display:flex;align-items:center;justify-content:center;
   z-index:2;}
-/* 出店タイルはカテゴリ絵文字を撤去し、店名を上端から詰める。
-   - 店名は右上の ★（44px）と被らないよう右マージン 44px
-   - エリア名は右下のバッジ列とぶつからないよう、バッジ数に応じて段階的に右パディング */
-.tile--shop .tile__name{margin:0 44px 3px 0;font-size:13.5px;line-height:1.3;}
-.tile--shop.tile--badges-1 .tile__meta{padding-right:32px;min-height:22px;}
-.tile--shop.tile--badges-2 .tile__meta{padding-right:54px;min-height:22px;}
-.tile--shop.tile--badges-3 .tile__meta{padding-right:78px;min-height:22px;}
+/* 出店タイルはカテゴリ絵文字を撤去し、店名を左上に詰める。
+   3状態ボタン（行きたい・行った・来年）をタイル下部に並べるため、
+   店名・エリア名の右側に大きな余白は不要。メモマークは右上に小さく出す。 */
+.tile--shop{padding:11px 11px 7px;display:flex;flex-direction:column;}
+.tile--shop .tile__name{margin:0 28px 3px 0;font-size:13.5px;line-height:1.3;}
+.tile--shop .tile__meta{font-size:11px;color:var(--sub);font-weight:600;margin-bottom:8px;}
+.tile__memo-mark{
+  position:absolute;top:6px;right:8px;font-size:14px;line-height:1;pointer-events:none;
+}
+
+/* タイル下部 3 状態トグルバー */
+.tile__statebar{
+  display:flex;gap:4px;margin-top:auto;
+}
+.state-btn{
+  flex:1 1 0;min-width:0;background:var(--card);
+  border:2px solid var(--ink);border-radius:8px;
+  padding:5px 1px 4px;cursor:pointer;transition:.1s;
+  display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1;
+  overflow:hidden;
+}
+.state-btn:active{transform:translate(1px,1px);box-shadow:0 0 0 var(--ink);}
+.state-btn__ico{font-size:15px;line-height:1;}
+.state-btn__lbl{font-size:9px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;}
+/* 状態 on の各ボタン色（マイページのチップ色と統一） */
+.state-btn--fav.on{background:#B5341F;color:#fff;border-color:#1a1a1a;}
+.state-btn--visited.on{background:#5b8a3a;color:#fff;border-color:#1a1a1a;}
+.state-btn--nextyear.on{background:#2E4A6B;color:#fff;border-color:#1a1a1a;}
+body.night .state-btn{background:#2c2f38;color:#f1ede3;}
 .empty{text-align:center;color:var(--sub);font-size:13px;padding:44px 20px;}
 .empty .big{font-size:40px;margin-bottom:8px;}
 

@@ -1470,34 +1470,50 @@
     renderShopList();
   }
   function shopTile(s) {
+    const f = isFav('shops', s.id);
     const v = isVisited(s.id);
     const m = hasNote(s.id);
     const ny = isNextYear(s.id);
-    /* バッジ重ね順：✅ visited → 📝 memo → 🌱 nextyear。tile__fav は右上に固定。
-       バッジが多すぎるとタイルがうるさくなるため、状態がある時だけ表示する。 */
-    const badgeArr = [
-      v ? '<span class="tile__badge tile__badge--visited" title="行った">✅</span>' : '',
-      m ? '<span class="tile__badge tile__badge--memo" title="メモあり">📝</span>' : '',
-      ny ? '<span class="tile__badge tile__badge--nextyear" title="来年も行きたい">🌱</span>' : ''
-    ].filter(Boolean);
-    const badges = badgeArr.join('');
-    /* バッジ数に応じて .tile--has-badgesN クラスを付け、エリア名の右パディング量を出し分ける。
-       これで「バッジ無しタイル」に無駄な余白が出ない。 */
-    const badgeCls = badgeArr.length ? ' tile--has-badges tile--badges-' + badgeArr.length : '';
-    /* カテゴリの絵文字（🛍️ / 🍜 など）は撤去し、店名を左上に詰める。
-       カテゴリ識別はモーダル側で表示するため、リストでは情報密度を優先する。 */
-    const t = el('div', 'tile tile--shop' + (v ? ' tile--visited' : '') + badgeCls,
-      `<div class="tile__name">${esc(s.name)}</div>
-       <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
-       ${badges ? `<div class="tile__badges">${badges}</div>` : ''}
-       <button class="tile__fav" aria-label="お気に入り">${
-         isFav('shops', s.id) ? '★' : '☆'}</button>`);
+    /* タイル下部に3状態トグルボタン（行きたい・行った・来年）を並べ、
+       一覧画面から直接ステータスを切り替えられるようにする。
+       メモがある場合だけ、右上に小さな📝マークを表示（操作対象ではない）。 */
+    const memoMark = m ? '<span class="tile__memo-mark" title="メモあり">📝</span>' : '';
+    const t = el('div', 'tile tile--shop' + (v ? ' tile--visited' : ''),
+      '<div class="tile__name">' + esc(s.name) + '</div>' +
+      '<div class="tile__meta">📍 ' + esc(shortName(s.zoneName)) + '</div>' +
+      memoMark +
+      '<div class="tile__statebar">' +
+        '<button class="state-btn state-btn--fav '      + (f  ? 'on' : '') + '" data-act="fav"  aria-label="行きたい">' +
+          '<span class="state-btn__ico">' + (f  ? '★' : '☆')   + '</span>' +
+          '<span class="state-btn__lbl">行きたい</span></button>' +
+        '<button class="state-btn state-btn--visited '  + (v  ? 'on' : '') + '" data-act="visit" aria-label="行った">' +
+          '<span class="state-btn__ico">' + (v  ? '✓' : '○')    + '</span>' +
+          '<span class="state-btn__lbl">行った</span></button>' +
+        '<button class="state-btn state-btn--nextyear ' + (ny ? 'on' : '') + '" data-act="next"  aria-label="来年こそは">' +
+          '<span class="state-btn__ico">' + (ny ? '🌱' : '🌿')   + '</span>' +
+          '<span class="state-btn__lbl">来年</span></button>' +
+      '</div>'
+    );
     t.onclick = () => openShop(s.id);
-    t.querySelector('.tile__fav').onclick = e => {
-      e.stopPropagation();
-      toast(toggleFav('shops', s.id) ? '★ マイプランに追加' : 'マイプランから削除');
-      saveFav(); renderShopList(); updateTabBadge();
-    };
+    /* 3ボタンのクリック：伝播を止めて、それぞれの toggle を実行 */
+    t.querySelectorAll('.state-btn').forEach(btn => {
+      btn.onclick = e => {
+        e.stopPropagation();
+        const act = btn.getAttribute('data-act');
+        if (act === 'fav') {
+          const added = toggleFav('shops', s.id); saveFav(); updateTabBadge();
+          toast(added ? '★ 行きたいに追加' : '行きたいから削除');
+        } else if (act === 'visit') {
+          const added = toggleVisited(s.id); saveVisited();
+          toast(added ? '✓ 行ったに追加' : '行ったから削除');
+        } else {
+          const added = toggleNextYear(s.id); saveNextYear();
+          toast(added ? '🌱 来年に追加' : '来年から削除');
+        }
+        renderShopList();
+        if (state.view === 'myplan') renderMyplan();
+      };
+    });
     return t;
   }
   function renderShopList() {
@@ -1700,25 +1716,9 @@
       }
       const g = el('div', 'list-grid');
       list.forEach(s => {
-        const badgeArr = [
-          isVisited(s.id) ? '<span class="tile__badge tile__badge--visited">✅</span>' : '',
-          hasNote(s.id) ? '<span class="tile__badge tile__badge--memo">📝</span>' : '',
-          isNextYear(s.id) ? '<span class="tile__badge tile__badge--nextyear">🌱</span>' : ''
-        ].filter(Boolean);
-        const badges = badgeArr.join('');
-        const badgeCls = badgeArr.length ? ' tile--has-badges tile--badges-' + badgeArr.length : '';
-        const t = el('div', 'tile tile--shop' + (isVisited(s.id) ? ' tile--visited' : '') + badgeCls,
-          `<div class="tile__name">${esc(s.name)}</div>
-           <div class="tile__meta">📍 ${esc(shortName(s.zoneName))}</div>
-           ${badges ? `<div class="tile__badges">${badges}</div>` : ''}
-           <button class="tile__fav">${isFav('shops', s.id) ? '★' : '☆'}</button>`);
-        t.onclick = () => openShop(s.id);
-        t.querySelector('.tile__fav').onclick = e => {
-          e.stopPropagation(); toggleFav('shops', s.id); saveFav();
-          toast(isFav('shops', s.id) ? '★ 行きたいに追加' : '行きたいから削除');
-          renderMyplan(); updateTabBadge();
-        };
-        /* visited サブタブではメモの先頭2行を併記（タグ＋本文の冒頭） */
+        /* shopTile を再利用して 3 状態ボタンの仕様を出店一覧と統一する */
+        const t = shopTile(s);
+        /* 行ったサブタブでは、タイル下にメモのプレビュー（タグ＋本文先頭）を併記 */
         if (sub === 'visited') {
           const n = getNote(s.id);
           if (n.tags.length || n.body) {
