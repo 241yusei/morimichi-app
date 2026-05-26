@@ -17,6 +17,12 @@
   --ink2:#222222;        /* 白・黄背景上で常に濃色を保つ固定インク */
   --soft:#e7e1d4;
   --ok:#1f9d57;
+  /* 3軸状態の色を全コンポーネントで共有する変数。
+     タイル・モーダル・チップ・マップピン・動線パネルすべてが
+     ここを参照することで色のメンタルマップを保つ。 */
+  --state-wish:#B5341F;     /* 朱赤：行きたい */
+  --state-visited:#5b8a3a;  /* 緑：行った */
+  --state-next:#2E4A6B;     /* 群青：来年こそは */
   --tabh:60px;
   --headh:134px;
   --hard:3px 3px 0 var(--ink);
@@ -31,6 +37,10 @@ body{
 body.night{
   --paper:#15171c;--card:#22252d;--ink:#f1ede3;--line:#3a3e48;
   --sub:#9aa0ac;--soft:#2c2f38;--hard:3px 3px 0 #000;
+  /* ダークモード時は彩度をやや上げてコントラスト確保 */
+  --state-wish:#d65240;
+  --state-visited:#7aac5a;
+  --state-next:#5a7da8;
 }
 img{max-width:100%;display:block;}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
@@ -378,11 +388,11 @@ main{
 }
 /* 状態別ピン色（行った=緑、来年=群青、行きたい=赤＝既存） */
 .pin--plan-visited  .plan-pin__dot,
-.pin--plan-visited  .plan-pin__label{background:#5b8a3a;}
+.pin--plan-visited  .plan-pin__label{background:var(--state-visited);}
 .pin--plan-nextyear .plan-pin__dot,
-.pin--plan-nextyear .plan-pin__label{background:#2E4A6B;}
+.pin--plan-nextyear .plan-pin__label{background:var(--state-next);}
 .pin--plan-wishlist .plan-pin__dot,
-.pin--plan-wishlist .plan-pin__label{background:#B5341F;}
+.pin--plan-wishlist .plan-pin__label{background:var(--state-wish);}
 /* ピン本体の周りに「他の状態が共存する」サブドットを並べる（最大2個） */
 .plan-pin__subs{
   position:absolute;top:-4px;right:-8px;display:flex;gap:2px;
@@ -391,9 +401,9 @@ main{
   width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink);
   background:#fff;display:block;
 }
-.plan-pin__sub--visited{background:#5b8a3a;}
-.plan-pin__sub--nextyear{background:#2E4A6B;}
-.plan-pin__sub--wishlist{background:#B5341F;}
+.plan-pin__sub--visited{background:var(--state-visited);}
+.plan-pin__sub--nextyear{background:var(--state-next);}
+.plan-pin__sub--wishlist{background:var(--state-wish);}
 .pin--plan{position:absolute;}
 
 /* マップ上部のマイプラン表示トグル */
@@ -411,9 +421,9 @@ main{
   font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:11px;
   border:1.5px solid var(--ink);color:#fff;line-height:1.45;
 }
-.plan-legend__chip--visited{background:#5b8a3a;}
-.plan-legend__chip--nextyear{background:#2E4A6B;}
-.plan-legend__chip--wishlist{background:#B5341F;}
+.plan-legend__chip--visited{background:var(--state-visited);}
+.plan-legend__chip--nextyear{background:var(--state-next);}
+.plan-legend__chip--wishlist{background:var(--state-wish);}
 
 /* 動線パネル内の店行に状態タグを表示 */
 .zone-shop__tags{display:inline-flex;gap:3px;margin-right:6px;}
@@ -421,9 +431,9 @@ main{
   font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:9px;
   border:1.5px solid var(--ink);color:#fff;line-height:1.4;white-space:nowrap;
 }
-.zone-shop__tag--visited{background:#5b8a3a;}
-.zone-shop__tag--nextyear{background:#2E4A6B;}
-.zone-shop__tag--wishlist{background:#B5341F;}
+.zone-shop__tag--visited{background:var(--state-visited);}
+.zone-shop__tag--nextyear{background:var(--state-next);}
+.zone-shop__tag--wishlist{background:var(--state-wish);}
 
 /* 選択中ショップの会場マップ赤マーキング（SVGオーバーレイ）。
    #areaSvg は #mapInner 内にありマップと一緒に拡縮される。 */
@@ -574,9 +584,9 @@ main{
 .state-btn__ico{font-size:15px;line-height:1;}
 .state-btn__lbl{font-size:9px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;}
 /* 状態 on の各ボタン色（マイページのチップ色と統一） */
-.state-btn--fav.on{background:#B5341F;color:#fff;border-color:#1a1a1a;}
-.state-btn--visited.on{background:#5b8a3a;color:#fff;border-color:#1a1a1a;}
-.state-btn--nextyear.on{background:#2E4A6B;color:#fff;border-color:#1a1a1a;}
+.state-btn--fav.on{background:var(--state-wish);color:#fff;border-color:#1a1a1a;}
+.state-btn--visited.on{background:var(--state-visited);color:#fff;border-color:#1a1a1a;}
+.state-btn--nextyear.on{background:var(--state-next);color:#fff;border-color:#1a1a1a;}
 body.night .state-btn{background:#2c2f38;color:#f1ede3;}
 .empty{text-align:center;color:var(--sub);font-size:13px;padding:44px 20px;}
 .empty .big{font-size:40px;margin-bottom:8px;}
@@ -637,14 +647,14 @@ body.night .state-btn{background:#2c2f38;color:#f1ede3;}
 .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
 .btn--primary{background:var(--red);color:#fff;}
 .btn--ghost{background:var(--card);color:var(--ink);}
-.btn--fav{background:var(--teal);color:#fff;}
-.btn--fav.on{background:var(--ok);}
-/* 行った／来年ボタン：fav と並んだときに色で識別できるよう、
-   非アクティブはニュートラルなcard色、アクティブは独自色に切り替える */
+/* 3トグル：色は全コンポーネント共通の3軸色（朱赤・緑・群青）に統一。
+   非アクティブはニュートラルな card 色＋ ink 文字。アクティブで状態色＋白文字。 */
+.btn--fav{background:var(--card);color:var(--ink);}
+.btn--fav.on{background:var(--state-wish);color:#fff;}
 .btn--visited{background:var(--card);color:var(--ink);}
-.btn--visited.on{background:#5b8a3a;color:#fff;}
+.btn--visited.on{background:var(--state-visited);color:#fff;}
 .btn--nextyear{background:var(--card);color:var(--ink);}
-.btn--nextyear.on{background:#c98a2b;color:#fff;}
+.btn--nextyear.on{background:var(--state-next);color:#fff;}
 /* 3ボタン横並びはモバイルだと文字が詰まるため、font-size をやや絞る */
 .modal__btns--triple .btn{padding:11px 6px;font-size:12px;}
 /* 狭い画面（〜425px）では 2行レイアウトに切替：
@@ -700,13 +710,15 @@ body.night .tile--visited{background:linear-gradient(180deg,#2a3a2a 0%,var(--car
 }
 
 /* マイプラン：第2層チップ群（行きたい／行った／来年）
-   未選択チップは ライト=白／ダーク=暗グレーで「下げる」表現に。
-   選択は赤＋白文字で「上げる」表現を両モード共通で維持する。 */
+   未選択は白／暗グレー。選択中は3軸の色で塗り分けて、タイル・モーダル・
+   マップピンと同じ色のメンタルマップを保つ。 */
 .chips--sub{margin-bottom:10px;}
 .chips--sub .chip{background:#ffffff;color:#1a1a1a;border-color:#1a1a1a;}
-.chips--sub .chip.active{background:var(--red);color:#ffffff;border-color:#1a1a1a;}
+.chips--sub .chip.active[data-sub="wishlist"]{background:var(--state-wish);color:#fff;}
+.chips--sub .chip.active[data-sub="visited"] {background:var(--state-visited);color:#fff;}
+.chips--sub .chip.active[data-sub="nextyear"]{background:var(--state-next);color:#fff;}
 body.night .chips--sub .chip{background:#2c2f38;color:#f1ede3;border-color:#f1ede3;}
-body.night .chips--sub .chip.active{background:var(--red);color:#ffffff;border-color:#f1ede3;}
+body.night .chips--sub .chip.active{color:#fff;}
 
 /* マイプラン：visited サブタブのタイル本文プレビュー（メモの抜粋） */
 .tile__notepreview{
@@ -754,7 +766,7 @@ body.night .regret-card__sub{color:#c8b9a3;}
   box-shadow:var(--hard);
 }
 .myplan-intro__kicker{
-  font-size:11px;font-weight:800;letter-spacing:.18em;color:#B5341F;
+  font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--state-wish);
   margin-bottom:4px;
 }
 .myplan-intro__head{
@@ -768,10 +780,10 @@ body.night .regret-card__sub{color:#c8b9a3;}
   border:2px solid var(--ink);border-radius:10px;padding:11px 10px;
   background:#fff;position:relative;color:#1a1a1a;
 }
-.myplan-intro__cell--indigo .myplan-intro__num{color:#2E4A6B;}
+.myplan-intro__cell--indigo .myplan-intro__num{color:var(--state-next);}
 .myplan-intro__num{
   font-family:"SF Mono","Menlo",monospace;font-size:11px;font-weight:700;
-  color:#B5341F;letter-spacing:.05em;margin-bottom:4px;
+  color:var(--state-wish);letter-spacing:.05em;margin-bottom:4px;
 }
 .myplan-intro__lbl{
   font-size:13px;font-weight:800;line-height:1.35;margin-bottom:4px;
@@ -812,7 +824,7 @@ body.night .myplan-intro__desc{color:#c8b9a3;}
 .myplan-onboard__list li p{margin:2px 0 0;color:var(--sub);font-size:11.5px;line-height:1.55;}
 .myplan-onboard__n{
   flex-shrink:0;width:26px;height:26px;border-radius:50%;
-  background:#B5341F;color:#fff;font-weight:900;font-size:13px;
+  background:var(--state-wish);color:#fff;font-weight:900;font-size:13px;
   display:flex;align-items:center;justify-content:center;
   font-family:"SF Pro Display",system-ui,sans-serif;line-height:1;
 }
@@ -894,15 +906,14 @@ body.night .myplan-intro__desc{color:#c8b9a3;}
   content:"";position:absolute;top:0;left:22%;right:22%;height:3px;
   background:var(--red);
 }
-/* 中央のマイページタブを「控えめに」強調：
-   赤丸サークルは廃止。ラベルを赤太字にして他タブとフラットに並べつつ、
-   その上に小さな点（インジケータ）で「ここがマイページ」を示す。 */
+/* 中央の「わたしの森道」タブ：
+   赤丸／インジ点は廃止。ラベルの赤太字＋わずかに字間を詰めて、
+   フラットなナビの中で「自分のページ」と分かる程度に控えめに強調する。
+   ラベルが6文字（「わたしの森道」）と他より長いので font-size と
+   letter-spacing で収まりを良くする。 */
 .tabbar__center .lbl{
-  color:var(--red);font-weight:900;letter-spacing:.02em;
-}
-.tabbar__center::after{
-  content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);
-  width:5px;height:5px;border-radius:50%;background:var(--red);
+  color:var(--red);font-weight:900;
+  font-size:10px;letter-spacing:-.04em;
 }
 .tabbar button .badge{
   position:absolute;top:3px;right:50%;margin-right:-22px;

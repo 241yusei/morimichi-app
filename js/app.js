@@ -1642,6 +1642,7 @@
       ].forEach(sb => {
         const c = el('button', 'chip' + (state.myplanShopSubTab === sb[0] ? ' active' : ''),
           sb[1] + ' (' + subCounts[sb[0]] + ')');
+        c.setAttribute('data-sub', sb[0]);
         c.onclick = () => { state.myplanShopSubTab = sb[0]; renderMyplan(); };
         subTabs.appendChild(c);
       });
