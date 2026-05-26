@@ -1802,27 +1802,25 @@
   }
 
   /* マイプランカード画像を 1080x1920（9:16）で描画して canvas を返す。
-     コンセプト：チケットスタブ型・媒体名は載せず純粋に「私のフェス記録」。
-     ポイント色は朱赤（巡った）と群青（来年こそは）の2色で対比を作る。 */
+     コンセプト：Magazine B 型「雑誌の表紙」。深緑×クリーム×マスタードの3色
+     カラーフィールドで、自分の森道体験を「一冊の雑誌の表紙」として記録する。
+     系統：Casa BRUTUS / POPEYE 建築×ランドスケープ号の配色。 */
   function generateMyplanCanvas() {
     const W = 1080, H = 1920;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
-    /* カラーパレット：紙＋墨をベースに、朱赤と群青の2色で2項目を対比 */
+    /* カラーパレット（3色厳守）：深緑＋クリーム＋マスタード差し色 */
     const COLOR = {
-      paper:   '#F2EBDC',  /* 生成り紙 */
-      ink:     '#1A1410',  /* 墨 */
-      crimson: '#B5341F',  /* 朱（01・巡った の差し色） */
-      indigo:  '#2E4A6B',  /* 群青（02・来年こそは の差し色） */
-      sub:     '#6E5F4E',  /* 茶系・補助テキスト */
-      hair:    'rgba(26,20,16,0.18)' /* 細い罫線 */
+      bg:      '#1B3A2E',  /* 深緑（蒲郡の松林と海の中間） */
+      ivory:   '#EFEAE0',  /* クリーム（日に焼けた紙色） */
+      mustard: '#E8B547'   /* マスタード（屋台の灯り、号数の差し色） */
     };
-    /* フォント（system フォント前提） */
+    /* フォント（system フォント前提）。明朝系の表記精度を優先 */
     const FONT = {
-      jp:  '-apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif',
-      en:  '"SF Pro Display", "Helvetica Neue", system-ui, sans-serif',
-      mono:'"SF Mono", "Menlo", monospace'
+      mincho: '"Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif',
+      sans:   '"Helvetica Neue", -apple-system, "Hiragino Sans", sans-serif',
+      mono:   '"SF Mono", "Menlo", "Courier New", monospace'
     };
 
     /* 数値とリスト */
@@ -1831,121 +1829,135 @@
     const visitedShops = SHOPS.filter(s => isVisited(s.id));
     const nextYearShops = SHOPS.filter(s => isNextYear(s.id));
 
-    /* 1. 紙の地 */
-    ctx.fillStyle = COLOR.paper;
+    /* 1. 地色 */
+    ctx.fillStyle = COLOR.bg;
     ctx.fillRect(0, 0, W, H);
     ctx.textBaseline = 'alphabetic';
 
-    /* 2. 上下ミシン目フレーム（半券らしさ） */
-    ctx.strokeStyle = COLOR.ink;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(80, 220); ctx.lineTo(W - 80, 220); ctx.stroke();
-    ctx.setLineDash([6, 4]);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(80, 240); ctx.lineTo(W - 80, 240); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(80, 1800); ctx.lineTo(W - 80, 1800); ctx.stroke();
-    ctx.setLineDash([]);
+    /* 2. 最上部の極小ヴォリューム表記（号数） */
+    ctx.textAlign = 'left';
+    ctx.fillStyle = COLOR.ivory;
+    /* letterSpacing は Canvas にないため、1文字ずつ x を進めて擬似実装 */
+    function drawSpaced(text, x, y, fontSpec, color, gap) {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = fontSpec;
+      let cx = x;
+      for (let i = 0; i < text.length; i++) {
+        ctx.fillText(text[i], cx, y);
+        cx += ctx.measureText(text[i]).width + gap;
+      }
+      ctx.restore();
+    }
+    drawSpaced('VOL.2026  /  MORIMICHI', 80, 180,
+      '500 18px ' + FONT.sans, COLOR.ivory, 4);
 
-    /* 3. メインタイトル（意味の伝わらないTICKET STUB / No.は撤去し、
-       上部の余白を広く取って整った印象にする） */
+    /* 3. 表紙タイトル「わたしの森道。」を雑誌タイトルとして大きく中央配置。
+       句点まで含めて1行で描く。画面幅に収まるよう、6文字+句点を 142px で。 */
     ctx.textAlign = 'center';
-    ctx.fillStyle = COLOR.ink;
-    ctx.font = '900 56px ' + FONT.en;
-    ctx.fillText('MORIMICHI ICHIBA', W/2, 320);
-    ctx.font = '500 36px ' + FONT.jp;
-    ctx.fillText('森、道、市場', W/2, 376);
-    ctx.font = '900 84px ' + FONT.en;
-    ctx.fillText('2026.05.22 - 24', W/2, 500);
-    ctx.fillStyle = COLOR.sub;
-    ctx.font = '300 28px ' + FONT.jp;
-    ctx.fillText('ラグーナビーチ ／ 蒲郡', W/2, 550);
+    ctx.fillStyle = COLOR.ivory;
+    ctx.font = '700 142px ' + FONT.mincho;
+    ctx.fillText('わたしの森道。', W/2, 470);
 
-    /* 4. キャッチコピー（強調のため大きく） */
-    ctx.fillStyle = COLOR.ink;
-    ctx.font = '500 56px ' + FONT.jp;
-    ctx.fillText('わたしの森道。', W/2, 680);
+    /* 4. 細い水平線（マスタード、幅50%、中央） */
+    ctx.strokeStyle = COLOR.mustard;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(W/2 - 240, 540);
+    ctx.lineTo(W/2 + 240, 540);
+    ctx.stroke();
 
-    /* 6. 2項目の数値ブロック（巡った／来年こそは）。中央分割の細罫 */
-    const BLOCK_TOP = 760;
-    const COL_L = W/4;
-    const COL_R = W*3/4;
-    ctx.strokeStyle = COLOR.hair;
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(W/2, BLOCK_TOP); ctx.lineTo(W/2, 1740); ctx.stroke();
+    /* 5. 特集タイトル（明朝、雑誌の特集コピー風）。
+       数字部分は色味を変えずに、文字組のみで強調。 */
+    ctx.fillStyle = COLOR.ivory;
+    ctx.font = '500 62px ' + FONT.mincho;
+    /* 1行に収めるため数字によって文を選ぶ */
+    let featureLine;
+    if (visited > 0 && nextYr > 0) {
+      featureLine = 'めぐった ' + visited + ' 店、来年の ' + nextYr + ' 店。';
+    } else if (visited > 0) {
+      featureLine = 'めぐった、' + visited + ' 店。';
+    } else {
+      featureLine = '来年こそは、' + nextYr + ' 店。';
+    }
+    ctx.fillText(featureLine, W/2, 660);
 
-    /* 左セル：めぐった（朱赤の番号） */
-    ctx.textAlign = 'center';
-    ctx.fillStyle = COLOR.crimson;
-    ctx.font = '500 26px ' + FONT.mono;
-    ctx.fillText('01', COL_L, BLOCK_TOP + 40);
-    ctx.fillStyle = COLOR.ink;
-    ctx.font = '900 44px ' + FONT.jp;
-    ctx.fillText('めぐった', COL_L, BLOCK_TOP + 100);
-    ctx.font = '900 168px ' + FONT.en;
-    ctx.fillText(String(visited), COL_L, BLOCK_TOP + 250);
-    ctx.fillStyle = COLOR.sub;
-    ctx.font = '300 22px ' + FONT.en;
-    ctx.fillText('STOPS · VISITED', COL_L, BLOCK_TOP + 295);
-
-    /* 右セル：来年こそは（群青の番号） */
-    ctx.fillStyle = COLOR.indigo;
-    ctx.font = '500 26px ' + FONT.mono;
-    ctx.fillText('02', COL_R, BLOCK_TOP + 40);
-    ctx.fillStyle = COLOR.ink;
-    ctx.font = '900 44px ' + FONT.jp;
-    ctx.fillText('来年こそは', COL_R, BLOCK_TOP + 100);
-    ctx.font = '900 168px ' + FONT.en;
-    ctx.fillText(String(nextYr), COL_R, BLOCK_TOP + 250);
-    ctx.fillStyle = COLOR.sub;
-    ctx.font = '300 22px ' + FONT.en;
-    ctx.fillText('FOR NEXT YEAR', COL_R, BLOCK_TOP + 295);
-
-    /* 7. 店舗名リスト（各カラムに縦並び）。差し色の短い下線をタイトル下に */
-    const LIST_TOP = BLOCK_TOP + 360;
-    const LIST_BOTTOM = 1740;
-    const LIST_LINE_H = 42;
-    const MAX_LINES = Math.floor((LIST_BOTTOM - LIST_TOP) / LIST_LINE_H);
-
-    function drawShopList(centerX, items, accentColor) {
-      /* 差し色の短い下線（リスト見出しの区切り） */
-      ctx.strokeStyle = accentColor;
-      ctx.lineWidth = 2;
+    /* 6. 目次見出し（左寄せ、マスタード、等幅小） */
+    ctx.textAlign = 'left';
+    function drawSectionHead(label, count, y) {
+      drawSpaced(label, 80, y, '500 18px ' + FONT.mono, COLOR.mustard, 2);
+      /* 右側に「— 12」のように件数を細く */
+      ctx.textAlign = 'right';
+      ctx.fillStyle = COLOR.mustard;
+      ctx.font = '500 18px ' + FONT.mono;
+      ctx.fillText('— ' + count, W - 80, y);
+      ctx.textAlign = 'left';
+    }
+    /* 細い罫線（マスタード、見出し下） */
+    function drawHairUnder(y) {
+      ctx.strokeStyle = COLOR.mustard;
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.moveTo(centerX - 42, LIST_TOP - 14);
-      ctx.lineTo(centerX + 42, LIST_TOP - 14);
+      ctx.moveTo(80, y);
+      ctx.lineTo(W - 80, y);
       ctx.stroke();
-      /* 中央揃えで店舗名を描く */
-      ctx.textAlign = 'center';
-      ctx.fillStyle = COLOR.ink;
-      ctx.font = '500 26px ' + FONT.jp;
-      const willOverflow = items.length > MAX_LINES;
-      const showCount = willOverflow ? MAX_LINES - 1 : items.length;
+    }
+
+    /* 店舗リスト描画関数：番号+名前を左揃え、雑誌の目次風 */
+    function drawShopList(items, startY, maxLines) {
+      ctx.textAlign = 'left';
+      const willOverflow = items.length > maxLines;
+      const showCount = willOverflow ? maxLines - 1 : items.length;
       for (let i = 0; i < showCount; i++) {
+        const n = String(i + 1).padStart(2, '0');
         const name = items[i].name;
-        /* 12文字を超えるものは末尾省略 */
-        const trimmed = name.length > 12 ? name.slice(0, 12) + '…' : name;
-        ctx.fillText(trimmed, centerX, LIST_TOP + 26 + i * LIST_LINE_H);
+        const trimmed = name.length > 22 ? name.slice(0, 22) + '…' : name;
+        const y = startY + i * 50;
+        /* 番号：等幅マスタード */
+        ctx.fillStyle = COLOR.mustard;
+        ctx.font = '500 22px ' + FONT.mono;
+        ctx.fillText(n, 80, y);
+        /* 店名：明朝クリーム */
+        ctx.fillStyle = COLOR.ivory;
+        ctx.font = '500 28px ' + FONT.mincho;
+        ctx.fillText(trimmed, 144, y);
       }
       if (willOverflow) {
         const rest = items.length - showCount;
-        ctx.fillStyle = COLOR.sub;
-        ctx.font = '500 22px ' + FONT.jp;
-        ctx.fillText('ほか ' + rest + ' 店', centerX, LIST_TOP + 26 + showCount * LIST_LINE_H);
+        ctx.fillStyle = COLOR.ivory;
+        ctx.font = '300 22px ' + FONT.mincho;
+        ctx.fillText('& ' + rest + ' more', 144, startY + showCount * 50);
       }
       if (items.length === 0) {
-        ctx.fillStyle = COLOR.sub;
-        ctx.font = '300 22px ' + FONT.jp;
-        ctx.fillText('— なし —', centerX, LIST_TOP + 26);
+        ctx.fillStyle = COLOR.ivory;
+        ctx.globalAlpha = 0.5;
+        ctx.font = '300 22px ' + FONT.mincho;
+        ctx.fillText('—  まだ記録がありません', 80, startY);
+        ctx.globalAlpha = 1;
       }
     }
-    drawShopList(COL_L, visitedShops,  COLOR.crimson);
-    drawShopList(COL_R, nextYearShops, COLOR.indigo);
 
-    /* 8. フッター（最小限の表記） */
-    ctx.textAlign = 'center';
-    ctx.fillStyle = COLOR.sub;
-    ctx.font = '500 20px ' + FONT.jp;
-    ctx.fillText('森、道、市場 2026', W/2, 1860);
+    /* 7. Contents（めぐった） */
+    drawSectionHead('CONTENTS', visited, 800);
+    drawHairUnder(818);
+    const visitedMax = 8;
+    drawShopList(visitedShops, 870, visitedMax);
+    const visitedRowsShown = Math.min(visitedShops.length, visitedMax);
+    const visitedBlockEnd = 870 + visitedRowsShown * 50;
+
+    /* 8. Wishlist 2027（来年こそは） */
+    const wishlistTop = Math.max(visitedBlockEnd + 50, 1380);
+    drawSectionHead('WISHLIST 2027', nextYr, wishlistTop);
+    drawHairUnder(wishlistTop + 18);
+    const nextYrMax = 5;
+    drawShopList(nextYearShops, wishlistTop + 70, nextYrMax);
+
+    /* 9. 最下部の発行情報（マスタードと明朝の組み合わせ） */
+    drawSpaced('MORIMICHI ICHIBA  2026', 80, 1820,
+      '500 18px ' + FONT.sans, COLOR.mustard, 3);
+    ctx.fillStyle = COLOR.ivory;
+    ctx.font = '500 22px ' + FONT.mincho;
+    ctx.fillText('5.22 - 24　ラグーナビーチ・蒲郡', 80, 1860);
 
     return canvas;
   }
