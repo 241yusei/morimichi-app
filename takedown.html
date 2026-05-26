@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<!--
+  撤退用テンプレート。
+  公式からの要請・重大な誤情報拡散などで即時公開停止する場合、このファイルを
+  index.html にコピーして commit→push する：
+    cp takedown.html index.html
+    git add index.html
+    git commit -m "公開停止"
+    git push origin main
+  これだけで全URLが本ページに置き換わる（GitHub Pages反映に数分）。
+  Service Worker のキャッシュは sw.js のバージョンを上げないと残ることがあるので、
+  必要なら sw.js も同時に書き換え（中身を空にしてキャッシュをクリアするロジックに）。
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>公開停止のお知らせ | 森、道、市場 2026 非公式ファンアプリ</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#fafaf7">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#fafaf7;color:#1a1a1a;
+  font-family:"IBM Plex Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased;line-height:1.8;}
+body{display:grid;place-items:center;padding:24px;}
+.box{max-width:520px;text-align:center;}
+h1{font-size:22px;font-weight:800;margin-bottom:16px;letter-spacing:.02em;}
+p{font-size:14px;color:#3a3a3a;margin-bottom:14px;}
+.muted{color:#7a7a72;font-size:12px;margin-top:24px;}
+a{color:#de1815;text-underline-offset:2px;}
+</style>
+</head>
+<body>
+<main class="box" role="main">
+  <h1>本アプリは公開を停止しました</h1>
+  <p>「森、道、市場 2026 非公式ファンアプリ」は公開を停止しました。<br>
+     ご利用いただきありがとうございました。</p>
+  <p>「森、道、市場」の最新情報は
+     <a href="https://morimichiichiba.jp/" target="_blank" rel="noopener">公式サイト</a>
+     をご確認ください。</p>
+  <p class="muted">制作：個人メディア「ナゴヤ人間」<br>
+     お問い合わせ：<a href="https://x.com/nagoya_ningen" target="_blank" rel="noopener">@nagoya_ningen</a></p>
+</main>
+</body>
+</html>
