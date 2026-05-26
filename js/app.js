@@ -1903,30 +1903,37 @@
       ctx.stroke();
     }
 
-    /* 店舗リスト描画関数：番号+名前を左揃え、雑誌の目次風 */
-    function drawShopList(items, startY, maxLines) {
+    /* 店舗リスト描画関数：2列で番号+名前を雑誌の目次風に並べる。
+       読み順は左列上→左列下→右列上→右列下（雑誌の目次の慣習）。
+       1列に並べたとき：左列上端→下端→右列上端→下端 */
+    function drawShopList2Col(items, startY, maxPerCol, lineH) {
       ctx.textAlign = 'left';
-      const willOverflow = items.length > maxLines;
-      const showCount = willOverflow ? maxLines - 1 : items.length;
+      const cap = maxPerCol * 2;
+      const willOverflow = items.length > cap;
+      const showCount = willOverflow ? cap - 1 : Math.min(items.length, cap);
+      const colX = [80, 580];
+      const nameX = [140, 640];
       for (let i = 0; i < showCount; i++) {
+        const col = Math.floor(i / maxPerCol);
+        const row = i % maxPerCol;
+        const y = startY + row * lineH;
         const n = String(i + 1).padStart(2, '0');
         const name = items[i].name;
-        const trimmed = name.length > 22 ? name.slice(0, 22) + '…' : name;
-        const y = startY + i * 50;
-        /* 番号：等幅マスタード */
+        const trimmed = name.length > 14 ? name.slice(0, 14) + '…' : name;
         ctx.fillStyle = COLOR.mustard;
         ctx.font = '500 22px ' + FONT.mono;
-        ctx.fillText(n, 80, y);
-        /* 店名：明朝クリーム */
+        ctx.fillText(n, colX[col], y);
         ctx.fillStyle = COLOR.ivory;
-        ctx.font = '500 28px ' + FONT.mincho;
-        ctx.fillText(trimmed, 144, y);
+        ctx.font = '500 26px ' + FONT.mincho;
+        ctx.fillText(trimmed, nameX[col], y);
       }
       if (willOverflow) {
         const rest = items.length - showCount;
+        const col = Math.floor(showCount / maxPerCol);
+        const row = showCount % maxPerCol;
         ctx.fillStyle = COLOR.ivory;
         ctx.font = '300 22px ' + FONT.mincho;
-        ctx.fillText('& ' + rest + ' more', 144, startY + showCount * 50);
+        ctx.fillText('& ' + rest + ' more', nameX[col], startY + row * lineH);
       }
       if (items.length === 0) {
         ctx.fillStyle = COLOR.ivory;
@@ -1937,20 +1944,16 @@
       }
     }
 
-    /* 7. Contents（めぐった） */
-    drawSectionHead('CONTENTS', visited, 800);
+    /* 7. VISITED 2026（めぐった）— 2列で最大16件 */
+    drawSectionHead('VISITED  2026', visited, 800);
     drawHairUnder(818);
-    const visitedMax = 8;
-    drawShopList(visitedShops, 870, visitedMax);
-    const visitedRowsShown = Math.min(visitedShops.length, visitedMax);
-    const visitedBlockEnd = 870 + visitedRowsShown * 50;
+    drawShopList2Col(visitedShops, 870, 8, 46);
 
-    /* 8. Wishlist 2027（来年こそは） */
-    const wishlistTop = Math.max(visitedBlockEnd + 50, 1380);
-    drawSectionHead('WISHLIST 2027', nextYr, wishlistTop);
+    /* 8. WISHLIST 2027（来年こそは）— 2列で最大10件 */
+    const wishlistTop = 1320;
+    drawSectionHead('WISHLIST  2027', nextYr, wishlistTop);
     drawHairUnder(wishlistTop + 18);
-    const nextYrMax = 5;
-    drawShopList(nextYearShops, wishlistTop + 70, nextYrMax);
+    drawShopList2Col(nextYearShops, wishlistTop + 70, 5, 46);
 
     /* 9. 最下部の発行情報（マスタードと明朝の組み合わせ） */
     drawSpaced('MORIMICHI ICHIBA  2026', 80, 1820,
