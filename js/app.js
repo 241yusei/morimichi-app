@@ -533,7 +533,7 @@
      ['🕒', 'タイテ', () => switchView('timetable')],
      ['🎤', '出演者', () => switchView('artists')],
      ['🛍️', '出店', () => switchView('shops')],
-     ['⭐', 'マイプラン', () => switchView('myplan')],
+     ['⭐', 'マイページ', () => switchView('myplan')],
      ['🚌', 'アクセス', () => jump('accessCard')],
      ['☔', '天気', () => openUrl(FESTIVAL.weather)],
      ['🪩', 'アフターパーティ', () => openUrl('https://nagoya-ningen.github.io/morimichi-afterparty/')]
@@ -550,6 +550,18 @@
       '主催・運営とは一切関係ありません。日程・出店・タイムテーブル等の最新かつ正確な情報は、' +
       '必ず <a href="' + FESTIVAL.official +
       '" target="_blank" rel="noopener">公式サイト</a> でご確認ください。'));
+
+    /* タイムテーブル（ボトムタブから撤去した分、ホームに大きな導線を置く） */
+    root.appendChild(secTitle('タイムテーブル', 'TIMETABLE'));
+    const ttBtn = el('button', 'timetable-jump',
+      '<span class="timetable-jump__ico">🕒</span>' +
+      '<span class="timetable-jump__body">' +
+        '<span class="timetable-jump__title">公式タイムテーブルを見る</span>' +
+        '<span class="timetable-jump__desc">5/22 FRI ／ 5/23 SAT ／ 5/24 SUN</span>' +
+      '</span>' +
+      '<span class="timetable-jump__arr">›</span>');
+    ttBtn.onclick = () => switchView('timetable');
+    root.appendChild(ttBtn);
 
     /* アクセス */
     root.appendChild(secTitle('会場アクセス', 'ACCESS'));

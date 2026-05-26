@@ -730,6 +730,21 @@ body.night .chips--sub .chip.active{background:var(--red);color:#ffffff;border-c
 body.night .regret-card{background:#3a2f24;color:#f1ede3;}
 body.night .regret-card__sub{color:#c8b9a3;}
 
+/* ホーム：タイムテーブル誘導カード（ボトムタブ撤去の代替導線） */
+.timetable-jump{
+  display:flex;align-items:center;gap:12px;width:100%;
+  border:2.5px solid var(--ink);border-radius:14px;
+  background:var(--card);color:var(--ink);
+  padding:14px 16px;box-shadow:var(--hard);transition:.1s;
+  margin-bottom:22px;text-align:left;
+}
+.timetable-jump:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+.timetable-jump__ico{font-size:30px;flex-shrink:0;line-height:1;}
+.timetable-jump__body{flex:1;min-width:0;}
+.timetable-jump__title{display:block;font-size:14.5px;font-weight:800;line-height:1.3;}
+.timetable-jump__desc{display:block;font-size:11.5px;color:var(--sub);font-weight:600;margin-top:3px;letter-spacing:.02em;}
+.timetable-jump__arr{font-size:22px;font-weight:800;flex-shrink:0;color:var(--red);}
+
 /* ホーム：マイページ機能の紹介セクション
    クイックメニュー直後に配置し、初見ユーザーにも「マイページで何ができるか」を伝える。
    2x2グリッド × 朱赤／群青の交互カラーで、シェア画像と同じトーンを統一。 */
@@ -879,6 +894,27 @@ body.night .myplan-intro__desc{color:#c8b9a3;}
   content:"";position:absolute;top:0;left:22%;right:22%;height:3px;
   background:var(--red);
 }
+/* 中央のマイページタブを強調：少し大きめのアイコン＋赤の浮き上がりサークル。
+   ラベルはサークル下にずらして表示する。 */
+.tabbar__center{position:relative;}
+.tabbar__center::after{
+  content:"";position:absolute;top:2px;left:50%;transform:translateX(-50%);
+  width:44px;height:44px;border-radius:50%;
+  background:var(--red);border:2.5px solid var(--ink);
+  box-shadow:var(--hard);z-index:1;
+}
+.tabbar__center .ico{
+  position:relative;z-index:2;font-size:22px;margin-top:-2px;
+}
+.tabbar__center .lbl{
+  position:relative;z-index:2;color:var(--ink);font-weight:900;
+  letter-spacing:.02em;font-size:9.5px;margin-top:4px;
+}
+.tabbar__center.active::before{display:none;}
+.tabbar__center.active .lbl{color:var(--red);}
+.tabbar__center:active::after{transform:translateX(-50%) translate(1px,1px);box-shadow:1px 1px 0 var(--ink);}
+body.night .tabbar__center .lbl{color:var(--ink);}
+body.night .tabbar__center.active .lbl{color:var(--red);}
 .tabbar button .badge{
   position:absolute;top:3px;right:50%;margin-right:-22px;
   background:var(--red);color:#fff;font-size:8px;font-weight:800;
