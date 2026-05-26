@@ -823,6 +823,35 @@ body.night .myplan-intro__desc{color:#c8b9a3;}
   margin:0 4px 10px;
 }
 
+/* プレビューモーダル：色テーマ選択チップ群 */
+.image-preview__themehead{
+  font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ink);
+  margin:6px 2px 6px;
+}
+.theme-chips{
+  display:flex;gap:8px;margin:0 0 12px;overflow-x:auto;
+  padding-bottom:4px;-webkit-overflow-scrolling:touch;
+}
+.theme-chip{
+  flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:4px 2px;border:none;background:transparent;cursor:pointer;
+}
+.theme-chip__sw{
+  width:48px;height:48px;border-radius:50%;border:2px solid;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:1px 1px 0 var(--ink);transition:.1s;
+}
+.theme-chip__dot{
+  width:14px;height:14px;border-radius:50%;
+}
+.theme-chip.is-active .theme-chip__sw{
+  outline:2.5px solid var(--red);outline-offset:3px;
+  transform:scale(1.04);
+}
+.theme-chip__lbl{
+  font-size:10px;font-weight:800;color:var(--ink);white-space:nowrap;
+}
+
 /* マイプラン：設定セクション（エクスポート／インポート） */
 .myplan-settings{
   margin-top:28px;padding:14px;border:2px dashed var(--ink);border-radius:10px;

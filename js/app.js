@@ -1801,20 +1801,40 @@
     });
   }
 
+  /* シェア画像の色テーマ：5つ。Magazine B 型構造を保ちつつ、号数違いとして
+     色のみを差し替える。すべて「アースカラー」系で森道のトーンを統一。
+     過去のデザインリサーチ（森道らしさ・シティモダン両方）から厳選した5色。 */
+  const SHARE_THEMES = {
+    moss:       { id:'moss',       label:'モス',       bg:'#1B3A2E', ivory:'#EFEAE0', accent:'#E8B547' }, /* 森 */
+    indigo:     { id:'indigo',     label:'インディゴ', bg:'#1F3540', ivory:'#EDE5D0', accent:'#C44A2E' }, /* 海・暖簾 */
+    terracotta: { id:'terracotta', label:'テラコッタ', bg:'#6B3A2A', ivory:'#F2EBDC', accent:'#E8B547' }, /* 土 */
+    charcoal:   { id:'charcoal',   label:'チャコール', bg:'#2A2622', ivory:'#F2EBDC', accent:'#B5341F' }, /* 墨・活版 */
+    mist:       { id:'mist',       label:'ミスト',     bg:'#5E7A88', ivory:'#F3EFE4', accent:'#4A5D3A' }  /* 霧・地図 */
+  };
+  const SHARE_THEME_ORDER = ['moss','indigo','terracotta','charcoal','mist'];
+  function getCurrentShareTheme() {
+    try {
+      const id = localStorage.getItem('mm2026_share_theme');
+      if (id && SHARE_THEMES[id]) return SHARE_THEMES[id];
+    } catch (e) {}
+    return SHARE_THEMES.moss;
+  }
+
   /* マイプランカード画像を 1080x1920（9:16）で描画して canvas を返す。
-     コンセプト：Magazine B 型「雑誌の表紙」。深緑×クリーム×マスタードの3色
-     カラーフィールドで、自分の森道体験を「一冊の雑誌の表紙」として記録する。
-     系統：Casa BRUTUS / POPEYE 建築×ランドスケープ号の配色。 */
-  function generateMyplanCanvas() {
+     コンセプト：Magazine B 型「雑誌の表紙」。アースカラー3色で構成。
+     系統：Casa BRUTUS / POPEYE 建築×ランドスケープ号の配色。
+     themeId を渡すと色テーマを切替。省略時は現在保存されたテーマを使う。 */
+  function generateMyplanCanvas(themeId) {
     const W = 1080, H = 1920;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
-    /* カラーパレット（3色厳守）：深緑＋クリーム＋マスタード差し色 */
+    /* カラーパレット（3色厳守）：bg ＋ ivory ＋ accent */
+    const theme = (themeId && SHARE_THEMES[themeId]) || getCurrentShareTheme();
     const COLOR = {
-      bg:      '#1B3A2E',  /* 深緑（蒲郡の松林と海の中間） */
-      ivory:   '#EFEAE0',  /* クリーム（日に焼けた紙色） */
-      mustard: '#E8B547'   /* マスタード（屋台の灯り、号数の差し色） */
+      bg:      theme.bg,
+      ivory:   theme.ivory,
+      mustard: theme.accent  /* 既存コード互換のため変数名は維持 */
     };
     /* フォント（system フォント前提）。明朝系の表記精度を優先 */
     const FONT = {
@@ -1965,7 +1985,7 @@
     return canvas;
   }
 
-  /* プレビューモーダル：書き出し前に画像を確認、シェア／保存。
+  /* プレビューモーダル：書き出し前に画像を確認、5色テーマから選んでシェア／保存。
      iOS では img の長押しでカメラロール保存も可能。
      データが空の場合は案内のみ。 */
   function showMyplanImagePreview() {
@@ -1973,23 +1993,58 @@
       toast('「行った」または「来年こそは」を登録してからシェアできます');
       return;
     }
-    const canvas = generateMyplanCanvas();
-    const dataUrl = canvas.toDataURL('image/png');
+    /* 現在の canvas を変数として保持（テーマ切替時に置き換える） */
+    let currentTheme = getCurrentShareTheme();
+    let currentCanvas = generateMyplanCanvas(currentTheme.id);
+    const dataUrl0 = currentCanvas.toDataURL('image/png');
+
+    /* テーマ選択チップを構築（各チップに背景色のスウォッチを表示） */
+    const swatchHtml = SHARE_THEME_ORDER.map(id => {
+      const th = SHARE_THEMES[id];
+      const active = id === currentTheme.id ? ' is-active' : '';
+      return '<button class="theme-chip' + active + '" data-theme="' + id +
+        '" aria-label="' + esc(th.label) + '">' +
+        '<span class="theme-chip__sw" style="background:' + th.bg +
+          ';color:' + th.ivory + ';border-color:' + th.ivory + '">' +
+          '<span class="theme-chip__dot" style="background:' + th.accent + '"></span>' +
+        '</span>' +
+        '<span class="theme-chip__lbl">' + esc(th.label) + '</span>' +
+      '</button>';
+    }).join('');
+
     openModal(
       '<div class="modal__handle"></div>' +
       '<p class="image-preview__title">プレビュー</p>' +
       '<div class="image-preview">' +
-        '<img src="' + dataUrl + '" alt="マイプラン プレビュー" class="image-preview__img">' +
+        '<img src="' + dataUrl0 + '" alt="マイプラン プレビュー" class="image-preview__img" id="ipImg">' +
       '</div>' +
+      '<p class="image-preview__themehead">色を選ぶ</p>' +
+      '<div class="theme-chips" id="ipThemes">' + swatchHtml + '</div>' +
       '<p class="image-preview__hint">画像を長押し（スマホ）でカメラロールに保存できます。下のボタンからもシェア／保存できます。</p>' +
       '<div class="modal__btns">' +
         '<button class="btn btn--primary" id="ipShare">シェア／保存する</button>' +
       '</div>'
     );
+
     const visited = state.visited.length;
     const nextYr  = state.nextYear.length;
+
+    /* テーマチップのクリックで canvas を再生成、img を差し替え、保存テーマを更新 */
+    $$('#ipThemes .theme-chip').forEach(chip => {
+      chip.onclick = () => {
+        const id = chip.getAttribute('data-theme');
+        if (!SHARE_THEMES[id]) return;
+        currentTheme = SHARE_THEMES[id];
+        currentCanvas = generateMyplanCanvas(id);
+        const img = $('#ipImg');
+        if (img) img.src = currentCanvas.toDataURL('image/png');
+        $$('#ipThemes .theme-chip').forEach(c => c.classList.toggle('is-active', c === chip));
+        try { localStorage.setItem('mm2026_share_theme', id); } catch (e) {}
+      };
+    });
+
     $('#ipShare').onclick = () => {
-      canvas.toBlob((blob) => {
+      currentCanvas.toBlob((blob) => {
         if (!blob) { toast('画像の生成に失敗しました'); return; }
         const file = new File([blob], 'morimichi2026-mine.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
